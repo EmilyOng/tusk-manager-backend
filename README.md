@@ -22,8 +22,8 @@ git clone https://github.com/EmilyOng/cvwo-backend.git
 ### Folder Structure
 ```
 .
-├── controllers # Handles incoming requests
-├── db          # Handles database connection
+├── controllers # Handles incoming API requests
+├── db          # Creates database connection
 ├── models      # Contains structs definitions
 ├── services    # Contains API logics
 ├── utils       # Contains useful utility functions
@@ -50,6 +50,8 @@ Finally, there are several quick shortcuts to make development easier.
 ### Infrastructure
 
 This application is hosted on [Heroku](https://www.heroku.com/), which can be found at https://tusk-manager-backend.herokuapp.com/.
+
+Note that Heroku does not handle environment variables from a `.env` file. Instead, it is configured directly from the Heroku dashboard, or CLI (more information [here](https://devcenter.heroku.com/articles/config-vars)).
 
 **Provisioning Heroku Postgres**
 
