@@ -1,18 +1,27 @@
 package services
 
 import (
+	"errors"
+	"log"
+
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
 	taskService "github.com/EmilyOng/cvwo/backend/services/task"
 	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"gorm.io/gorm"
 )
 
 func CreateState(payload models.CreateStatePayload) models.CreateStateResponse {
 	state := models.State{Name: payload.Name, BoardID: &payload.BoardID, CurrentPosition: payload.CurrentPosition}
 	result := db.DB.Create(&state)
+	if result.Error != nil {
+		log.Println(result.Error)
+		return models.CreateStateResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.CreateStateResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
-		State:    state,
+		State: state,
 	}
 }
 
@@ -24,8 +33,19 @@ func UpdateState(payload models.UpdateStatePayload) models.UpdateStateResponse {
 		CurrentPosition: payload.CurrentPosition,
 	}
 	result := db.DB.Model(&models.State{ID: state.ID}).Save(&state)
+	if result.Error != nil {
+		log.Println(result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.UpdateStateResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
+
+		return models.UpdateStateResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.UpdateStateResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
 		State: models.StatePrimitive{
 			ID:              state.ID,
 			Name:            state.Name,
@@ -39,8 +59,14 @@ func DeleteState(payload models.DeleteStatePayload) models.DeleteStateResponse {
 	state := models.State{ID: payload.ID}
 	tasks, err := getStateTasks(payload.ID)
 	if err != nil {
+		log.Println(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.DeleteStateResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
 		return models.DeleteStateResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(err)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 	for _, task := range tasks {
@@ -53,9 +79,13 @@ func DeleteState(payload models.DeleteStatePayload) models.DeleteStateResponse {
 	}
 
 	result := db.DB.Delete(&state)
-	return models.DeleteStateResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+	if result.Error != nil {
+		log.Print(result.Error)
+		return models.DeleteStateResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
 	}
+	return models.DeleteStateResponse{}
 }
 
 func getStateTasks(stateID uint8) ([]models.TaskPrimitive, error) {

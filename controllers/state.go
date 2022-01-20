@@ -16,7 +16,10 @@ func CreateState(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, models.Response{Error: error_UNEXPECTED})
+		c.AbortWithStatusJSON(
+			http.StatusBadRequest,
+			errorUtils.MakeResponseErr(models.ServerError),
+		)
 		return
 	}
 
@@ -29,7 +32,10 @@ func UpdateState(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, error_UNEXPECTED)
+		c.AbortWithStatusJSON(
+			http.StatusBadRequest,
+			errorUtils.MakeResponseErr(models.ServerError),
+		)
 		return
 	}
 

@@ -23,8 +23,8 @@ type Claim struct {
 	UserEmail string
 }
 
-func GetSecretKey() (secretKey string, err error) {
-	godotenv.Load()
+func GetSecretKey() (secretKey string) {
+	godotenv.Load() // Loads .env file, which is available only on development environment
 
 	secretKey = os.Getenv("AUTH_SECRET_KEY")
 	return

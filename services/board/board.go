@@ -1,6 +1,9 @@
 package services
 
 import (
+	"errors"
+	"log"
+
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
 	memberService "github.com/EmilyOng/cvwo/backend/services/member"
@@ -17,8 +20,13 @@ func CreateBoard(payload models.CreateBoardPayload) models.CreateBoardResponse {
 	}
 	board := models.Board{Name: payload.Name, Color: payload.Color, Members: []*models.Member{&owner}}
 	result := db.DB.Create(&board)
+	if result.Error != nil {
+		log.Println(result.Error)
+		return models.CreateBoardResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.CreateBoardResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
 		Board: models.BoardPrimitive{
 			ID:    board.ID,
 			Name:  board.Name,
@@ -30,8 +38,18 @@ func CreateBoard(payload models.CreateBoardPayload) models.CreateBoardResponse {
 func GetBoard(payload models.GetBoardPayload) models.GetBoardResponse {
 	board := models.Board{ID: payload.ID}
 	result := db.DB.Where(&board).First(&board)
+	if result.Error != nil {
+		log.Println(result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.GetBoardResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
+		return models.GetBoardResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.GetBoardResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
 		Board: models.BoardPrimitive{
 			ID:    board.ID,
 			Name:  board.Name,
@@ -46,9 +64,14 @@ func GetBoardTasks(payload models.GetBoardTasksPayload) models.GetBoardTasksResp
 	err := db.DB.Model(&board).Order("tasks.name").Preload("Tags", func(db *gorm.DB) *gorm.DB {
 		return db.Order("tags.id")
 	}).Association("Tasks").Find(&tasks)
+	if err != nil {
+		log.Println(err)
+		return models.GetBoardTasksResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.GetBoardTasksResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(err)},
-		Tasks:    tasks,
+		Tasks: tasks,
 	}
 }
 
@@ -56,9 +79,14 @@ func GetBoardTags(payload models.GetBoardTagsPayload) models.GetBoardTagsRespons
 	board := models.Board{ID: payload.BoardID}
 	var tags []models.TagPrimitive
 	err := db.DB.Model(&board).Order("tags.id").Association("Tags").Find(&tags)
+	if err != nil {
+		log.Println(err)
+		return models.GetBoardTagsResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.GetBoardTagsResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(err)},
-		Tags:     tags,
+		Tags: tags,
 	}
 }
 
@@ -66,9 +94,14 @@ func GetBoardStates(payload models.GetBoardStatesPayload) models.GetBoardStatesR
 	board := models.Board{ID: payload.BoardID}
 	var states []models.StatePrimitive
 	err := db.DB.Model(&board).Order("states.current_position").Association("States").Find(&states)
+	if err != nil {
+		log.Println(err)
+		return models.GetBoardStatesResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.GetBoardStatesResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(err)},
-		States:   states,
+		States: states,
 	}
 }
 
@@ -76,22 +109,23 @@ func GetBoardMemberProfiles(payload models.GetBoardMemberProfilesPayload) models
 	var members []models.MemberPrimitive
 	err := db.DB.Model(&models.Board{ID: payload.BoardID}).Association("Members").Find(&members)
 	if err != nil {
+		log.Println(err)
 		return models.GetBoardMemberProfilesResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(err)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 	var memberProfiles []models.MemberProfile
 	for _, member := range members {
 		memberProfile, err := memberService.MakeMemberProfile(member)
 		if err != nil {
+			log.Println(err)
 			return models.GetBoardMemberProfilesResponse{
-				Response: models.Response{Error: errorUtils.MakeErrStr(err)},
+				Response: errorUtils.MakeResponseErr(models.ServerError),
 			}
 		}
 		memberProfiles = append(memberProfiles, memberProfile)
 	}
 	return models.GetBoardMemberProfilesResponse{
-		Response:       models.Response{Error: errorUtils.MakeErrStr(err)},
 		MemberProfiles: memberProfiles,
 	}
 }
@@ -99,8 +133,19 @@ func GetBoardMemberProfiles(payload models.GetBoardMemberProfilesPayload) models
 func UpdateBoard(payload models.UpdateBoardPayload) models.UpdateBoardResponse {
 	board := models.Board{ID: payload.ID, Name: payload.Name, Color: payload.Color}
 	result := db.DB.Model(&models.Board{ID: board.ID}).Save(&board)
+	if result.Error != nil {
+		log.Println(result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.UpdateBoardResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
+
+		return models.UpdateBoardResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.UpdateBoardResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
 		Board: models.BoardPrimitive{
 			ID:    board.ID,
 			Name:  board.Name,
@@ -110,63 +155,63 @@ func UpdateBoard(payload models.UpdateBoardPayload) models.UpdateBoardResponse {
 }
 
 func DeleteBoard(payload models.DeleteBoardPayload) models.DeleteBoardResponse {
-	board := models.Board{ID: payload.ID}
-	tasksResponse := GetBoardTasks(models.GetBoardTasksPayload{BoardID: payload.ID})
-	if len(tasksResponse.Error) > 0 {
+	var board models.Board
+	result := db.DB.Model(&models.Board{ID: payload.ID}).Preload("Tasks", "Tags", "Members").First(&board)
+	if result.Error != nil {
+		log.Println(result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.DeleteBoardResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
+
 		return models.DeleteBoardResponse{
-			Response: models.Response{Error: tasksResponse.Error},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 
-	for _, task := range tasksResponse.Tasks {
+	for _, task := range board.Tasks {
 		deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: task.ID})
 		if len(deleteTaskResponse.Error) > 0 {
 			return models.DeleteBoardResponse{
-				Response: models.Response{Error: deleteTaskResponse.Error},
+				Response: errorUtils.MakeResponseErr(models.ServerError),
 			}
 		}
 	}
 
-	membersResponse := GetBoardMemberProfiles(models.GetBoardMemberProfilesPayload{BoardID: payload.ID})
-	if len(membersResponse.Error) > 0 {
-		return models.DeleteBoardResponse{
-			Response: models.Response{Error: membersResponse.Error},
-		}
-	}
-
-	for _, member := range membersResponse.MemberProfiles {
+	for _, member := range board.Members {
 		deleteMemberResponse := memberService.DeleteMember(models.DeleteMemberPayload{ID: member.ID})
 		if len(deleteMemberResponse.Error) > 0 {
 			return models.DeleteBoardResponse{
-				Response: models.Response{Error: deleteMemberResponse.Error},
+				Response: errorUtils.MakeResponseErr(models.ServerError),
 			}
 		}
 	}
 
-	statesReponse := GetBoardStates(models.GetBoardStatesPayload{BoardID: payload.ID})
-	if len(statesReponse.Error) > 0 {
-		return models.DeleteBoardResponse{
-			Response: models.Response{Error: statesReponse.Error},
-		}
-	}
-	for _, state := range statesReponse.States {
+	for _, state := range board.States {
 		deleteStateResponse := stateService.DeleteState(models.DeleteStatePayload{ID: state.ID})
 		if len(deleteStateResponse.Error) > 0 {
 			return models.DeleteBoardResponse{
-				Response: models.Response{Error: deleteStateResponse.Error},
+				Response: errorUtils.MakeResponseErr(models.ServerError),
 			}
 		}
 	}
 
-	result := db.DB.Where(&models.Tag{BoardID: &board.ID}).Delete(models.Tag{})
+	result = db.DB.Where(&models.Tag{BoardID: &board.ID}).Delete(models.Tag{})
 
 	if result.Error != nil {
+		log.Println(result.Error)
 		return models.DeleteBoardResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 	result = db.DB.Delete(&board)
+	if result.Error == nil {
+		return models.DeleteBoardResponse{}
+	}
+
+	log.Println(result.Error)
 	return models.DeleteBoardResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+		Response: errorUtils.MakeResponseErr(models.ServerError),
 	}
 }

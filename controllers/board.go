@@ -17,14 +17,20 @@ import (
 func GetUserBoards(c *gin.Context) {
 	userInterface, _ := c.Get("user")
 	if userInterface == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, models.Response{Error: error_UNAUTHORIZED})
+		c.AbortWithStatusJSON(
+			http.StatusUnauthorized,
+			errorUtils.MakeResponseErr(models.UnauthorizedError),
+		)
 		return
 	}
 	user := userInterface.(models.AuthUser)
 
 	boards, err := userService.GetUserBoards(user.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, models.Response{Error: errorUtils.MakeErrStr(err)})
+		c.AbortWithStatusJSON(
+			http.StatusInternalServerError,
+			errorUtils.MakeResponseErr(models.ServerError),
+		)
 		return
 	}
 	c.JSON(http.StatusOK, models.GetUserBoardsResponse{
@@ -36,7 +42,7 @@ func GetBoardTasks(c *gin.Context) {
 	var boardID uint8
 	fmt.Sscan(c.Param("board_id"), &boardID)
 	getBoardTasksResponse := boardService.GetBoardTasks(models.GetBoardTasksPayload{BoardID: boardID})
-	c.JSON(http.StatusOK, getBoardTasksResponse)
+	c.JSON(errorUtils.MakeResponseCode(getBoardTasksResponse.Response), getBoardTasksResponse)
 }
 
 func CreateBoard(c *gin.Context) {
@@ -44,7 +50,10 @@ func CreateBoard(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, models.Response{Error: error_UNAUTHORIZED})
+		c.AbortWithStatusJSON(
+			http.StatusBadRequest,
+			errorUtils.MakeResponseErr(models.ServerError),
+		)
 		return
 	}
 
@@ -58,7 +67,10 @@ func CreateBoard(c *gin.Context) {
 
 	res := db.DB.Create(&states)
 	if err = res.Error; err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, models.Response{Error: errorUtils.MakeErrStr(err)})
+		c.AbortWithStatusJSON(
+			http.StatusInternalServerError,
+			errorUtils.MakeResponseErr(models.ServerError),
+		)
 	}
 
 	createBoardResponse := boardService.CreateBoard(payload)
@@ -93,7 +105,10 @@ func UpdateBoard(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, error_UNEXPECTED)
+		c.AbortWithStatusJSON(
+			http.StatusBadRequest,
+			errorUtils.MakeResponseErr(models.ServerError),
+		)
 		return
 	}
 

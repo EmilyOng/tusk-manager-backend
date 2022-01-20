@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -26,22 +27,35 @@ func MakeMemberProfile(member models.MemberPrimitive) (memberProfile models.Memb
 func UpdateMember(payload models.UpdateMemberPayload) models.UpdateMemberResponse {
 	var member models.Member
 	result := db.DB.Model(&models.Member{}).Where("id = ?", payload.ID).Find(&member)
-
 	if result.Error != nil {
+		log.Println(result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.UpdateMemberResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
+
 		return models.UpdateMemberResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	member.Role = payload.Role
 	result = db.DB.Model(&member).Save(&member)
 	if result.Error != nil {
+		log.Println(result.Error)
 		return models.UpdateMemberResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 	profile, err := MakeMemberProfile(models.MemberPrimitive(member))
+	if err != nil {
+		log.Println(err)
+		return models.UpdateMemberResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
 	return models.UpdateMemberResponse{
-		Response:      models.Response{Error: errorUtils.MakeErrStr(err)},
 		MemberProfile: profile,
 	}
 }
@@ -50,28 +64,42 @@ func DeleteMember(payload models.DeleteMemberPayload) models.DeleteMemberRespons
 	var member models.Member
 	result := db.DB.Model(&models.Member{}).Where("id = ?", payload.ID).Find(&member)
 	if result.Error != nil {
+		log.Println(result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.DeleteMemberResponse{
+				Response: errorUtils.MakeResponseErr(models.NotFound),
+			}
+		}
+
 		return models.DeleteMemberResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 
 	err := db.DB.Model(&models.Board{}).Where("id = ?", *member.BoardID).Association("Members").Delete(member)
 	if err != nil {
+		log.Println(err)
 		return models.DeleteMemberResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(err)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 
 	err = db.DB.Model(&models.User{}).Where("id = ?", *member.UserID).Association("Members").Delete(member)
 	if err != nil {
+		log.Println(err)
 		return models.DeleteMemberResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(err)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 	result = db.DB.Delete(&member)
-	return models.DeleteMemberResponse{
-		Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+	if result.Error != nil {
+		log.Println(result.Error)
+		return models.DeleteMemberResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
 	}
+
+	return models.DeleteMemberResponse{}
 }
 
 func CreateMember(payload models.CreateMemberPayload) models.CreateMemberResponse {
@@ -80,8 +108,9 @@ func CreateMember(payload models.CreateMemberPayload) models.CreateMemberRespons
 	err := db.DB.Model(&models.User{}).Where("email = ?", payload.Email).First(&user).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Println(err)
 		return models.CreateMemberResponse{
-			Response: models.Response{Error: "Invalid email address"},
+			Response: errorUtils.MakeResponseErr(models.NotFound),
 		}
 	}
 
@@ -90,8 +119,9 @@ func CreateMember(payload models.CreateMemberPayload) models.CreateMemberRespons
 	err = db.DB.Model(&models.Member{}).Where("user_id = ? AND board_id = ?", user.ID, payload.BoardID).First(&member_).Error
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Println(err)
 		return models.CreateMemberResponse{
-			Response: models.Response{Error: "Board is already shared with " + user.Name},
+			Response: errorUtils.MakeResponseErr(models.ConflictError),
 		}
 	}
 
@@ -102,14 +132,18 @@ func CreateMember(payload models.CreateMemberPayload) models.CreateMemberRespons
 	}
 	result := db.DB.Model(&models.Member{}).Create(&m)
 	if result.Error != nil {
+		log.Println(result.Error)
 		return models.CreateMemberResponse{
-			Response: models.Response{Error: errorUtils.MakeErrStr(result.Error)},
+			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 
 	profile, err := MakeMemberProfile(models.MemberPrimitive(m))
+	if err != nil {
+		log.Println(err)
+		return models.CreateMemberResponse{Response: errorUtils.MakeResponseErr(models.ServerError)}
+	}
 	return models.CreateMemberResponse{
-		Response:      models.Response{Error: errorUtils.MakeErrStr(err)},
 		MemberProfile: profile,
 	}
 }

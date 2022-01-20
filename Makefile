@@ -8,17 +8,19 @@ start:
 
 # Generate types to be used on frontend
 generate-types:
-	rm -rf ../frontend/src/generated
-	mkdir ../frontend/src/generated
+	rm -rf ../cvwo-frontend/src/generated
+	mkdir ../cvwo-frontend/src/generated
 	# Handle Enums
-	echo "export enum Color {Turquoise = 'Turquoise', Blue = 'Blue', Cyan = 'Cyan', Green = 'Green', Yellow = 'Yellow', Red = 'Red'}" >> ../frontend/src/generated/types.ts 
-	echo "export enum Role {Owner = 'Owner', Editor = 'Editor', Viewer = 'Viewer'}" >> ../frontend/src/generated/types.ts 
-	touch ../frontend/src/generated/models.ts
+	echo "export enum Color {Turquoise = 'Turquoise', Blue = 'Blue', Cyan = 'Cyan', Green = 'Green', Yellow = 'Yellow', Red = 'Red'}" >> ../cvwo-frontend/src/generated/types.ts 
+	echo "export enum Role {Owner = 'Owner', Editor = 'Editor', Viewer = 'Viewer'}" >> ../cvwo-frontend/src/generated/types.ts 
+	echo "export enum ErrorCode {NotFound = 'not_found', ServerError = 'server_error', UnauthorizedError = 'unauthorized', TypeMismatch = 'type_mismatch', ConflictError = 'conflict'}" >> ../cvwo-frontend/src/generated/types.ts 
+	touch ../cvwo-frontend/src/generated/models.ts
 	$(shell go env GOPATH)/bin/tscriptify \
 		-package=github.com/EmilyOng/cvwo/backend/models \
-		-target=../frontend/src/generated/models.ts \
+		-target=../cvwo-frontend/src/generated/models.ts \
 		-import="import { Color } from './types'" \
 		-import="import { Role } from './types'" \
+		-import="import { ErrorCode } from './types'" \
 		-interface \
 		models/board.go \
 		models/common.go \
