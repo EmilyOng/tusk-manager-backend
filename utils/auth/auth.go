@@ -8,13 +8,8 @@ import (
 	"github.com/EmilyOng/cvwo/backend/models"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type JWTAuth struct {
-	SecretKey string
-}
 
 type Claim struct {
 	jwt.StandardClaims
@@ -23,14 +18,11 @@ type Claim struct {
 	UserEmail string
 }
 
-func GetSecretKey() (secretKey string) {
-	godotenv.Load() // Loads .env file, which is available only on development environment
+const (
+	UserKey string = "user"
+)
 
-	secretKey = os.Getenv("AUTH_SECRET_KEY")
-	return
-}
-
-func (j *JWTAuth) GenerateToken(user models.UserPrimitive) (signedToken string, err error) {
+func GenerateToken(user models.UserPrimitive) (signedToken string, err error) {
 	// Token expires in 24 hours
 	claims := &Claim{
 		UserID:    user.ID,
@@ -42,13 +34,16 @@ func (j *JWTAuth) GenerateToken(user models.UserPrimitive) (signedToken string, 
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err = token.SignedString([]byte(j.SecretKey))
+
+	secretKey := os.Getenv("AUTH_SECRET_KEY")
+	signedToken, err = token.SignedString([]byte(secretKey))
 	return
 }
 
-func (j *JWTAuth) ValidateToken(signedToken string) (claims *Claim, err error) {
+func ValidateToken(signedToken string) (claims *Claim, err error) {
+	secretKey := os.Getenv("AUTH_SECRET_KEY")
 	token, err := jwt.ParseWithClaims(signedToken, &Claim{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(j.SecretKey), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return
@@ -56,18 +51,18 @@ func (j *JWTAuth) ValidateToken(signedToken string) (claims *Claim, err error) {
 
 	claims, valid := token.Claims.(*Claim)
 	if !valid {
-		err = errors.New("cannot parse claims")
+		err = errors.New("Cannot parse JWT claims")
 		return
 	}
 	if claims.ExpiresAt < time.Now().Local().Unix() {
-		err = errors.New("token has expired")
+		err = errors.New("JWT token has expired")
 		return
 	}
 	return
 }
 
 func HashPassword(password string) (hashed string, err error) {
-	// uses hashing cost of 10
+	// Uses a hashing cost of 10
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return

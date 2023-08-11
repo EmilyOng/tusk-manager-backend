@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
@@ -17,44 +16,33 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetAuthToken(c *gin.Context) (token string) {
-	token_ := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")
+func GetAuthToken(ctx *gin.Context) (token string) {
+	token_ := strings.Split(ctx.Request.Header.Get("Authorization"), "Bearer ")
 	if len(token_) < 2 {
-		c.Set("user", nil)
+		// Missing authentication token
+		ctx.Set(authUtils.UserKey, nil)
 		return
 	}
+
 	token = strings.Trim(token_[1], " ")
 	return
 }
 
-func GenerateJWTToken(c *gin.Context, user models.UserPrimitive) (signedToken string, err error) {
-	secretKey := authUtils.GetSecretKey()
-
-	jwtAuth := authUtils.JWTAuth{
-		SecretKey: secretKey,
-	}
-
-	signedToken, err = jwtAuth.GenerateToken(user)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	return
-}
-
-func IsAuthenticated(c *gin.Context) {
-	userInterface, _ := c.Get("user")
+func IsAuthenticated(ctx *gin.Context) {
+	userInterface, _ := ctx.Get(authUtils.UserKey)
 	if userInterface == nil {
-		c.AbortWithStatusJSON(
+		// User is unauthenticated
+		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
 			errorUtils.MakeResponseErr(models.UnauthorizedError),
 		)
 		return
 	}
+
 	user := userInterface.(models.AuthUser)
-	token := GetAuthToken(c)
-	c.JSON(http.StatusOK, models.AuthUserResponse{
+	token := GetAuthToken(ctx)
+	// Persists user authentication
+	ctx.JSON(http.StatusOK, models.AuthUserResponse{
 		User: models.AuthUser{
 			ID:    user.ID,
 			Name:  user.Name,
@@ -64,12 +52,12 @@ func IsAuthenticated(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
+func Login(ctx *gin.Context) {
 	var payload models.LoginPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.TypeMismatch),
 		)
@@ -81,7 +69,7 @@ func Login(c *gin.Context) {
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// User record does not exist
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusOK,
 			errorUtils.MakeResponseErr(models.NotFound),
 		)
@@ -91,22 +79,22 @@ func Login(c *gin.Context) {
 	err = authUtils.ComparePassword(user.Password, payload.Password)
 	if err != nil {
 		// User input password does not match
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusOK,
 			errorUtils.MakeResponseErr(models.UnauthorizedError),
 		)
 		return
 	}
 
-	signedToken, err := GenerateJWTToken(c, user)
+	signedToken, err := authUtils.GenerateToken(user)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
 		return
 	}
-	c.JSON(http.StatusOK, models.LoginResponse{
+	ctx.JSON(http.StatusOK, models.LoginResponse{
 		User: models.AuthUser{
 			ID:    user.ID,
 			Name:  user.Name,
@@ -116,11 +104,11 @@ func Login(c *gin.Context) {
 	})
 }
 
-func SignUp(c *gin.Context) {
+func SignUp(ctx *gin.Context) {
 	var payload models.SignUpPayload
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.TypeMismatch),
 		)
@@ -136,7 +124,7 @@ func SignUp(c *gin.Context) {
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// User record already exists
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusOK,
 			errorUtils.MakeResponseErr(models.ConflictError),
 		)
@@ -145,7 +133,7 @@ func SignUp(c *gin.Context) {
 
 	hashedPassword, err := authUtils.HashPassword(payload.Password)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -155,16 +143,16 @@ func SignUp(c *gin.Context) {
 	user.Password = hashedPassword
 	user, err = userService.CreateUser(user)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
 		return
 	}
 
-	signedToken, err := GenerateJWTToken(c, user)
+	signedToken, err := authUtils.GenerateToken(user)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -174,13 +162,13 @@ func SignUp(c *gin.Context) {
 	// Generate seed data
 	err = seedUtils.SeedData(&user)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
 		return
 	}
-	c.JSON(http.StatusOK, models.SignUpResponse{
+	ctx.JSON(http.StatusOK, models.SignUpResponse{
 		User: models.AuthUser{
 			ID:    user.ID,
 			Name:  user.Name,
@@ -191,6 +179,6 @@ func SignUp(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	c.Set("user", nil)
+	c.Set(authUtils.UserKey, nil)
 	c.JSON(http.StatusOK, gin.H{})
 }

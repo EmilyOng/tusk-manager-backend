@@ -1,28 +1,25 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/models"
-	utils "github.com/EmilyOng/cvwo/backend/utils/auth"
+	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
 	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetAuthUser(c *gin.Context) {
-	token := GetAuthToken(c)
+func SetAuthUser(ctx *gin.Context) {
+	token := GetAuthToken(ctx)
 
-	secretKey := utils.GetSecretKey()
+	claims, err := authUtils.ValidateToken(token)
 
-	jwtAuth := &utils.JWTAuth{SecretKey: secretKey}
-	claims, err := jwtAuth.ValidateToken(token)
 	if err != nil {
-		log.Println(err)
-		c.Set("user", nil)
+		ctx.Set(authUtils.UserKey, nil)
 		return
 	}
+
 	user := models.AuthUser{
 		ID:    claims.UserID,
 		Name:  claims.UserName,
@@ -30,13 +27,13 @@ func SetAuthUser(c *gin.Context) {
 		Token: token,
 	}
 
-	c.Set("user", user)
+	ctx.Set(authUtils.UserKey, user)
 }
 
-func AuthGuard(c *gin.Context) {
-	userInterface, _ := c.Get("user")
+func AuthGuard(ctx *gin.Context) {
+	userInterface, _ := ctx.Get(authUtils.UserKey)
 	if userInterface == nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
 			errorUtils.MakeResponseErr(models.UnauthorizedError),
 		)
