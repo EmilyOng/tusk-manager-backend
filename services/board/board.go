@@ -7,8 +7,6 @@ import (
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
 	memberService "github.com/EmilyOng/cvwo/backend/services/member"
-	stateService "github.com/EmilyOng/cvwo/backend/services/state"
-	taskService "github.com/EmilyOng/cvwo/backend/services/task"
 	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
 	"gorm.io/gorm"
 )
@@ -155,63 +153,71 @@ func UpdateBoard(payload models.UpdateBoardPayload) models.UpdateBoardResponse {
 }
 
 func DeleteBoard(payload models.DeleteBoardPayload) models.DeleteBoardResponse {
-	var board models.Board
-	result := db.DB.Model(&models.Board{ID: payload.ID}).Preload("Tasks", "Tags", "Members").First(&board)
-	if result.Error != nil {
-		log.Println(result.Error)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	board := models.Board{ID: payload.ID}
+
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		result := tx.
+			Preload("Tasks").
+			Preload("Tags").
+			Preload("States").
+			Preload("Members").
+			First(&board)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Delete associated tasks
+		if len(board.Tasks) > 0 {
+			result = tx.Model(&models.Task{}).Delete(&board.Tasks)
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+
+		// Delete associated tags
+		if len(board.Tags) > 0 {
+			result = tx.Model(&models.Tag{}).Delete(&board.Tags)
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+
+		// Delete associated states
+		if len(board.States) > 0 {
+			result = tx.Model(&models.State{}).Delete(&board.States)
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+
+		// Delete associated members
+		if len(board.Members) > 0 {
+			result = tx.Model(&models.Member{}).Delete(&board.Members)
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+
+		// Delete the board
+		result = tx.Delete(&board)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.DeleteBoardResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
 			}
-		}
-
-		return models.DeleteBoardResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
-		}
-	}
-
-	for _, task := range board.Tasks {
-		deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: task.ID})
-		if len(deleteTaskResponse.Error) > 0 {
+		} else {
 			return models.DeleteBoardResponse{
 				Response: errorUtils.MakeResponseErr(models.ServerError),
 			}
 		}
 	}
-
-	for _, member := range board.Members {
-		deleteMemberResponse := memberService.DeleteMember(models.DeleteMemberPayload{ID: member.ID})
-		if len(deleteMemberResponse.Error) > 0 {
-			return models.DeleteBoardResponse{
-				Response: errorUtils.MakeResponseErr(models.ServerError),
-			}
-		}
-	}
-
-	for _, state := range board.States {
-		deleteStateResponse := stateService.DeleteState(models.DeleteStatePayload{ID: state.ID})
-		if len(deleteStateResponse.Error) > 0 {
-			return models.DeleteBoardResponse{
-				Response: errorUtils.MakeResponseErr(models.ServerError),
-			}
-		}
-	}
-
-	result = db.DB.Where(&models.Tag{BoardID: &board.ID}).Delete(models.Tag{})
-
-	if result.Error != nil {
-		log.Println(result.Error)
-		return models.DeleteBoardResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
-		}
-	}
-	result = db.DB.Delete(&board)
-	if result.Error == nil {
-		return models.DeleteBoardResponse{}
-	}
-
-	log.Println(result.Error)
-	return models.DeleteBoardResponse{
-		Response: errorUtils.MakeResponseErr(models.ServerError),
-	}
+	return models.DeleteBoardResponse{}
 }

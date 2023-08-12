@@ -16,17 +16,17 @@ import (
 )
 
 func GetUserBoards(ctx *gin.Context) {
-	authUser, _ := ctx.Get(authUtils.UserKey)
-	if authUser == nil {
+	userInterface, _ := ctx.Get(authUtils.UserKey)
+	if userInterface == nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
 			errorUtils.MakeResponseErr(models.UnauthorizedError),
 		)
 		return
 	}
-	user := authUser.(models.AuthUser)
+	authUser := userInterface.(models.AuthUser)
 
-	boards, err := userService.GetUserBoards(user.ID)
+	boards, err := userService.GetUserBoards(authUser.ID)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
