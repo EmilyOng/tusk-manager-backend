@@ -8,32 +8,33 @@ import (
 	"github.com/EmilyOng/cvwo/backend/models"
 	boardService "github.com/EmilyOng/cvwo/backend/services/board"
 	userService "github.com/EmilyOng/cvwo/backend/services/user"
+	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
 	commonUtils "github.com/EmilyOng/cvwo/backend/utils/common"
 	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
 
 	"github.com/gin-gonic/gin"
 )
 
-func GetUserBoards(c *gin.Context) {
-	userInterface, _ := c.Get("user")
-	if userInterface == nil {
-		c.AbortWithStatusJSON(
+func GetUserBoards(ctx *gin.Context) {
+	authUser, _ := ctx.Get(authUtils.UserKey)
+	if authUser == nil {
+		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
 			errorUtils.MakeResponseErr(models.UnauthorizedError),
 		)
 		return
 	}
-	user := userInterface.(models.AuthUser)
+	user := authUser.(models.AuthUser)
 
 	boards, err := userService.GetUserBoards(user.ID)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
 		return
 	}
-	c.JSON(http.StatusOK, models.GetUserBoardsResponse{
+	ctx.JSON(http.StatusOK, models.GetUserBoardsResponse{
 		Boards: boards,
 	})
 }

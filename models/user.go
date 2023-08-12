@@ -9,13 +9,6 @@ type User struct {
 	Tasks    []*Task   `json:"tasks"`        // Tasks that the user owns
 }
 
-type UserPrimitive struct {
-	ID       uint8  `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `gorm:"not null" json:"password"`
-}
-
 type Profile struct {
 	ID    uint8  `json:"id"`
 	Name  string `json:"name"`

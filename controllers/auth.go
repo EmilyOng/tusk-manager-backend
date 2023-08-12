@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
 	userService "github.com/EmilyOng/cvwo/backend/services/user"
 	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
@@ -64,9 +63,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	var user models.UserPrimitive
-	err = db.DB.Model(&models.User{}).Where("email = ?", payload.Email).First(&user).Error
-
+	user, err := userService.FindUser(payload.Email)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// User record does not exist
 		ctx.AbortWithStatusJSON(
@@ -80,7 +77,7 @@ func Login(ctx *gin.Context) {
 	if err != nil {
 		// User input password does not match
 		ctx.AbortWithStatusJSON(
-			http.StatusOK,
+			http.StatusUnauthorized,
 			errorUtils.MakeResponseErr(models.UnauthorizedError),
 		)
 		return
@@ -115,17 +112,11 @@ func SignUp(ctx *gin.Context) {
 		return
 	}
 
-	user := models.UserPrimitive{
-		Name:     payload.Name,
-		Email:    payload.Email,
-		Password: payload.Password,
-	}
-	err = db.DB.Model(&models.User{}).Where("email = ?", payload.Email).First(&user).Error
-
+	_, err = userService.FindUser(payload.Email)
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// User record already exists
 		ctx.AbortWithStatusJSON(
-			http.StatusOK,
+			http.StatusUnprocessableEntity,
 			errorUtils.MakeResponseErr(models.ConflictError),
 		)
 		return
@@ -140,8 +131,11 @@ func SignUp(ctx *gin.Context) {
 		return
 	}
 
-	user.Password = hashedPassword
-	user, err = userService.CreateUser(user)
+	user, err := userService.CreateUser(models.User{
+		Name:     payload.Name,
+		Email:    payload.Email,
+		Password: hashedPassword,
+	})
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,

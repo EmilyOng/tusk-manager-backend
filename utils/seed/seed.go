@@ -10,7 +10,7 @@ import (
 )
 
 // Generates sample seed data
-func SeedData(user *models.UserPrimitive) (err error) {
+func SeedData(user *models.User) (err error) {
 	colors := commonUtils.GetDefaultColors()
 
 	var tags []*models.Tag

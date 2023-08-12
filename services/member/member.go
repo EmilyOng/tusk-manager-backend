@@ -104,7 +104,7 @@ func DeleteMember(payload models.DeleteMemberPayload) models.DeleteMemberRespons
 
 func CreateMember(payload models.CreateMemberPayload) models.CreateMemberResponse {
 	// Check validity of invitee's email
-	var user models.UserPrimitive
+	var user models.User
 	err := db.DB.Model(&models.User{}).Where("email = ?", payload.Email).First(&user).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {

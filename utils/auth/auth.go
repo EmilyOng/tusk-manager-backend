@@ -22,7 +22,7 @@ const (
 	UserKey string = "user"
 )
 
-func GenerateToken(user models.UserPrimitive) (signedToken string, err error) {
+func GenerateToken(user models.User) (signedToken string, err error) {
 	// Token expires in 24 hours
 	claims := &Claim{
 		UserID:    user.ID,
