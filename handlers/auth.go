@@ -2,17 +2,32 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/EmilyOng/cvwo/backend/models"
 	userService "github.com/EmilyOng/cvwo/backend/services/user"
 	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
 	seedUtils "github.com/EmilyOng/cvwo/backend/utils/seed"
+	"github.com/EmilyOng/cvwo/backend/views"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+)
+
+const (
+	userNotFoundMessage                        = "The email '%s' does not exist. Have you created an account?"
+	userAlreadyExistsMessage                   = "The user with the email '%s' already exists."
+	unableToCreateUserMessage                  = "Unable to create user '%s'."
+	passwordsMismatchErrorMessage              = "Passwords do not match, please try again."
+	unableToHashPasswordMessage                = "Unable to hash the password."
+	unableToGenerateAuthenticationTokenMessage = "Unable to generate authentication token."
+	unableToGenerateSeedDataMessage            = "Unable to generate seed data."
+
+	successfullyLoginMessage  = "Welcome back %s!"
+	successfullySignUpMessage = "Welcome %s! Setting things up..."
+	successfullyLogoutMessage = "Goodbye!"
 )
 
 func GetAuthToken(ctx *gin.Context) (token string) {
@@ -33,32 +48,36 @@ func IsAuthenticated(ctx *gin.Context) {
 		// User is unauthenticated
 		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
-			errorUtils.MakeResponseErr(models.UnauthorizedError),
+			views.Response{
+				Message: unauthorizedMessage,
+				Code:    http.StatusUnauthorized,
+			},
 		)
 		return
 	}
 
-	user := userInterface.(models.AuthUser)
-	token := GetAuthToken(ctx)
+	authUserView := userInterface.(views.AuthUserView)
+	authUserView.Token = GetAuthToken(ctx)
 	// Persists user authentication
-	ctx.JSON(http.StatusOK, models.AuthUserResponse{
-		User: models.AuthUser{
-			ID:    user.ID,
-			Name:  user.Name,
-			Email: user.Email,
-			Token: token,
+	ctx.JSON(http.StatusOK, views.AuthUserResponse{
+		Response: views.Response{
+			Code: http.StatusOK,
 		},
+		User: authUserView,
 	})
 }
 
 func Login(ctx *gin.Context) {
-	var payload models.LoginPayload
+	var payload views.LoginPayload
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
-			errorUtils.MakeResponseErr(models.TypeMismatch),
+			views.Response{
+				Message: typeMismatchErrorMessage,
+				Code:    http.StatusBadRequest,
+			},
 		)
 		return
 	}
@@ -67,8 +86,11 @@ func Login(ctx *gin.Context) {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// User record does not exist
 		ctx.AbortWithStatusJSON(
-			http.StatusOK,
-			errorUtils.MakeResponseErr(models.NotFound),
+			http.StatusUnprocessableEntity,
+			views.Response{
+				Message: fmt.Sprintf(userNotFoundMessage, payload.Email),
+				Code:    http.StatusUnprocessableEntity,
+			},
 		)
 		return
 	}
@@ -78,7 +100,10 @@ func Login(ctx *gin.Context) {
 		// User input password does not match
 		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
-			errorUtils.MakeResponseErr(models.UnauthorizedError),
+			views.Response{
+				Message: passwordsMismatchErrorMessage,
+				Code:    http.StatusUnauthorized,
+			},
 		)
 		return
 	}
@@ -87,12 +112,19 @@ func Login(ctx *gin.Context) {
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: unableToGenerateAuthenticationTokenMessage,
+				Code:    http.StatusInternalServerError,
+			},
 		)
 		return
 	}
-	ctx.JSON(http.StatusOK, models.LoginResponse{
-		User: models.AuthUser{
+	ctx.JSON(http.StatusOK, views.LoginResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyLoginMessage, user.Name),
+			Code:    http.StatusOK,
+		},
+		User: views.AuthUserView{
 			ID:    user.ID,
 			Name:  user.Name,
 			Email: user.Email,
@@ -102,12 +134,15 @@ func Login(ctx *gin.Context) {
 }
 
 func SignUp(ctx *gin.Context) {
-	var payload models.SignUpPayload
+	var payload views.SignUpPayload
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
-			errorUtils.MakeResponseErr(models.TypeMismatch),
+			views.Response{
+				Message: typeMismatchErrorMessage,
+				Code:    http.StatusBadRequest,
+			},
 		)
 		return
 	}
@@ -117,7 +152,10 @@ func SignUp(ctx *gin.Context) {
 		// User record already exists
 		ctx.AbortWithStatusJSON(
 			http.StatusUnprocessableEntity,
-			errorUtils.MakeResponseErr(models.ConflictError),
+			views.Response{
+				Message: fmt.Sprintf(userAlreadyExistsMessage, payload.Email),
+				Code:    http.StatusUnprocessableEntity,
+			},
 		)
 		return
 	}
@@ -126,7 +164,10 @@ func SignUp(ctx *gin.Context) {
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: unableToHashPasswordMessage,
+				Code:    http.StatusInternalServerError,
+			},
 		)
 		return
 	}
@@ -139,7 +180,10 @@ func SignUp(ctx *gin.Context) {
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: fmt.Sprintf(unableToCreateUserMessage, payload.Email),
+				Code:    http.StatusInternalServerError,
+			},
 		)
 		return
 	}
@@ -148,7 +192,10 @@ func SignUp(ctx *gin.Context) {
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: unableToGenerateAuthenticationTokenMessage,
+				Code:    http.StatusInternalServerError,
+			},
 		)
 		return
 	}
@@ -158,12 +205,19 @@ func SignUp(ctx *gin.Context) {
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusInternalServerError,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: unableToGenerateSeedDataMessage,
+				Code:    http.StatusInternalServerError,
+			},
 		)
 		return
 	}
-	ctx.JSON(http.StatusOK, models.SignUpResponse{
-		User: models.AuthUser{
+	ctx.JSON(http.StatusOK, views.SignUpResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullySignUpMessage, user.Name),
+			Code:    http.StatusOK,
+		},
+		User: views.AuthUserView{
 			ID:    user.ID,
 			Name:  user.Name,
 			Email: user.Email,
@@ -174,5 +228,8 @@ func SignUp(ctx *gin.Context) {
 
 func Logout(c *gin.Context) {
 	c.Set(authUtils.UserKey, nil)
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, views.Response{
+		Message: successfullyLogoutMessage,
+		Code:    http.StatusOK,
+	})
 }

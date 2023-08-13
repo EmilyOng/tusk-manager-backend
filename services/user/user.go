@@ -1,8 +1,17 @@
 package services
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
+	"github.com/EmilyOng/cvwo/backend/views"
+	"gorm.io/gorm"
+)
+
+const (
+	unableToGetUserBoards = "Unable to get boards for user (%s)."
 )
 
 func CreateUser(user models.User) (models.User, error) {
@@ -17,14 +26,34 @@ func FindUser(email string) (models.User, error) {
 	return user, err
 }
 
-func GetUserBoards(userId string) ([]models.BoardPrimitive, error) {
-	var boards []models.BoardPrimitive
+func GetUserBoards(payload views.GetUserBoardsPayload) views.GetUserBoardsResponse {
+	var boardsView []views.BoardMinimalView
 	var boardIds []string
 
-	err := db.DB.Model(&models.Member{}).Where("user_id = ?", userId).Select("board_id").Find(&boardIds).Error
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Model(&models.Member{}).
+			Where("user_id = ?", payload.UserID).
+			Select("board_id").
+			Find(&boardIds).
+			Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&models.Board{}).Where("id IN ?", boardIds).Find(&boardsView).Error
+		return err
+	})
+
 	if err != nil {
-		return boards, err
+		return views.GetUserBoardsResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToGetUserBoards, payload.UserID),
+				Code:    http.StatusInternalServerError,
+			},
+		}
 	}
-	err = db.DB.Model(&models.Board{}).Where("id IN ?", boardIds).Find(&boards).Error
-	return boards, err
+	return views.GetUserBoardsResponse{
+		Response: views.Response{Code: http.StatusOK},
+		Boards:   boardsView,
+	}
 }

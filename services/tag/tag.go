@@ -2,73 +2,121 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"github.com/EmilyOng/cvwo/backend/views"
 	"gorm.io/gorm"
 )
 
-func CreateTag(payload models.CreateTagPayload) models.CreateTagResponse {
-	tag := models.Tag{Name: payload.Name, Color: payload.Color, BoardID: &payload.BoardID}
+const (
+	unableToCreateTagMessage = "Unable to create tag '%s'."
+	unableToUpdateTagMessage = "Unable to update tag (%s)."
+	unableToGetTagMessage    = "Unable to retrieve tag (%s)."
+	unableToDeleteTagMessage = "Unable to delete tag (%s)."
+	tagNotFoundMessage       = "The tag cannot be found (%s)."
+
+	successfullyCreatedTagMessage = "Successfully created tag '%s'!"
+	successfullyUpdatedTagMessage = "Successfully updated tag '%s'!"
+	successfullyDeletedTagMessage = "Successfully deleted tag '%s'!"
+)
+
+func CreateTag(payload views.CreateTagPayload) views.CreateTagResponse {
+	tag := models.Tag{Name: payload.Name, Color: payload.Color, BoardID: payload.BoardID}
 	err := db.DB.Create(&tag).Error
 
 	if err != nil {
-		return models.CreateTagResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.CreateTagResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToCreateTagMessage, payload.Name),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.CreateTagResponse{
-		Tag: models.TagPrimitive{ID: tag.ID, Name: tag.Name, Color: tag.Color, BoardID: tag.BoardID},
+	return views.CreateTagResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyCreatedTagMessage, tag.Name),
+			Code:    http.StatusOK,
+		},
+		Tag: views.TagMinimalView{ID: tag.ID, Name: tag.Name, Color: tag.Color, BoardID: tag.BoardID},
 	}
 }
 
-func DeleteTag(payload models.DeleteTagPayload) models.DeleteTagResponse {
+func DeleteTag(payload views.DeleteTagPayload) views.DeleteTagResponse {
 	tag := models.Tag{ID: payload.ID}
 	err := db.DB.Model(&tag).Preload("Tasks").Find(&tag).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.DeleteTagResponse{
-				Response: errorUtils.MakeResponseErr(models.NotFound),
+			return views.DeleteTagResponse{
+				Response: views.Response{
+					Message: fmt.Sprintf(tagNotFoundMessage, payload.ID),
+					Code:    http.StatusUnprocessableEntity,
+				},
 			}
 		}
 
-		return models.DeleteTagResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.DeleteTagResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToGetTagMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	// Remove the association between the tag and its tasks
-	err = db.DB.Model(&tag).Association("Tasks").Delete(&tag.Tasks)
+
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		// Remove the association between the tag and its tasks
+		err = tx.Model(&tag).Association("Tasks").Delete(&tag.Tasks)
+		if err != nil {
+			return err
+		}
+		return tx.Delete(&tag).Error
+	})
+
 	if err != nil {
-		return models.DeleteTagResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.DeleteTagResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToDeleteTagMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	err = db.DB.Delete(&tag).Error
-	if err != nil {
-		return models.DeleteTagResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
-		}
+
+	return views.DeleteTagResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyDeletedTagMessage, tag.Name),
+			Code:    http.StatusOK,
+		},
 	}
-	return models.DeleteTagResponse{}
 }
 
-func UpdateTag(payload models.UpdateTagPayload) models.UpdateTagResponse {
-	tag := models.Tag{ID: payload.ID, Name: payload.Name, BoardID: &payload.BoardID, Color: payload.Color}
+func UpdateTag(payload views.UpdateTagPayload) views.UpdateTagResponse {
+	tag := models.Tag{ID: payload.ID, Name: payload.Name, BoardID: payload.BoardID, Color: payload.Color}
 	err := db.DB.Save(&tag).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.UpdateTagResponse{
-				Response: errorUtils.MakeResponseErr(models.NotFound),
+			return views.UpdateTagResponse{
+				Response: views.Response{
+					Message: fmt.Sprintf(tagNotFoundMessage, payload.ID),
+					Code:    http.StatusUnprocessableEntity,
+				},
 			}
 		}
 
-		return models.UpdateTagResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.UpdateTagResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToUpdateTagMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.UpdateTagResponse{
-		Tag: models.TagPrimitive{ID: tag.ID, Name: tag.Name, BoardID: tag.BoardID, Color: tag.Color},
+	return views.UpdateTagResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyUpdatedTagMessage, tag.Name),
+			Code:    http.StatusOK,
+		},
+		Tag: views.TagMinimalView{ID: tag.ID, Name: tag.Name, BoardID: tag.BoardID, Color: tag.Color},
 	}
 }

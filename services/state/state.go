@@ -2,49 +2,79 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
-	taskService "github.com/EmilyOng/cvwo/backend/services/task"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"github.com/EmilyOng/cvwo/backend/views"
 	"gorm.io/gorm"
 )
 
-func CreateState(payload models.CreateStatePayload) models.CreateStateResponse {
-	state := models.State{Name: payload.Name, BoardID: &payload.BoardID, CurrentPosition: payload.CurrentPosition}
+const (
+	unableToCreateStateMessage = "Unable to create state '%s'."
+	unableToUpdateStateMessage = "Unable to update state (%s)."
+	unableToGetStateMessage    = "Unable to retrieve state (%s)."
+	unableToDeleteStateMessage = "Unable to delete state (%s)."
+	stateNotFoundMessage       = "The state cannot be found (%s)."
+
+	successfullyCreatedStateMessage = "Successfully created state '%s'!"
+	successfullyUpdatedStateMessage = "Successfully updated state '%s'!"
+	successfullyDeletedStateMessage = "Successfully deleted state '%s'!"
+)
+
+func CreateState(payload views.CreateStatePayload) views.CreateStateResponse {
+	state := models.State{Name: payload.Name, BoardID: payload.BoardID, CurrentPosition: payload.CurrentPosition}
 	err := db.DB.Create(&state).Error
 
 	if err != nil {
-		return models.CreateStateResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.CreateStateResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToCreateStateMessage, payload.Name),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.CreateStateResponse{
+	return views.CreateStateResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyCreatedStateMessage, state.Name),
+			Code:    http.StatusOK,
+		},
 		State: state,
 	}
 }
 
-func UpdateState(payload models.UpdateStatePayload) models.UpdateStateResponse {
+func UpdateState(payload views.UpdateStatePayload) views.UpdateStateResponse {
 	state := models.State{
 		ID:              payload.ID,
 		Name:            payload.Name,
-		BoardID:         &payload.BoardID,
+		BoardID:         payload.BoardID,
 		CurrentPosition: payload.CurrentPosition,
 	}
 	err := db.DB.Save(&state).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.UpdateStateResponse{
-				Response: errorUtils.MakeResponseErr(models.NotFound),
+			return views.UpdateStateResponse{
+				Response: views.Response{
+					Message: fmt.Sprintf(stateNotFoundMessage, payload.ID),
+					Code:    http.StatusInternalServerError,
+				},
 			}
 		}
 
-		return models.UpdateStateResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.UpdateStateResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToUpdateStateMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.UpdateStateResponse{
-		State: models.StatePrimitive{
+	return views.UpdateStateResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyUpdatedStateMessage, state.Name),
+			Code:    http.StatusOK,
+		},
+		State: views.StateMinimalView{
 			ID:              state.ID,
 			Name:            state.Name,
 			BoardID:         state.BoardID,
@@ -53,38 +83,47 @@ func UpdateState(payload models.UpdateStatePayload) models.UpdateStateResponse {
 	}
 }
 
-func DeleteState(payload models.DeleteStatePayload) models.DeleteStateResponse {
+func DeleteState(payload views.DeleteStatePayload) views.DeleteStateResponse {
 	state := models.State{ID: payload.ID}
 
 	// Get tasks associated with the state
-	var tasks []models.TaskPrimitive
-	err := db.DB.Model(&state).Association("Tasks").Find(&tasks)
+	var tasksView []views.TaskMinimalView
+	err := db.DB.Model(&state).Association("Tasks").Find(&tasksView)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.DeleteStateResponse{
-				Response: errorUtils.MakeResponseErr(models.NotFound),
+			return views.DeleteStateResponse{
+				Response: views.Response{
+					Message: fmt.Sprintf(stateNotFoundMessage, payload.ID),
+					Code:    http.StatusUnprocessableEntity,
+				},
 			}
 		}
-		return models.DeleteStateResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
-		}
-	}
-	// TODO: Delegate to a default state
-	for _, task := range tasks {
-		deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: task.ID})
-		if len(deleteTaskResponse.Error) > 0 {
-			return models.DeleteStateResponse{
-				Response: models.Response{Error: deleteTaskResponse.Error},
-			}
+		return views.DeleteStateResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToGetStateMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
 
-	err = db.DB.Delete(&state).Error
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		// TODO: Delegate tasks to a default state
+		return tx.Delete(&state).Error
+	})
+
 	if err != nil {
-		return models.DeleteStateResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.DeleteStateResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToDeleteStateMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.DeleteStateResponse{}
+	return views.DeleteStateResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyDeletedStateMessage, state.Name),
+			Code:    http.StatusOK,
+		},
+	}
 }

@@ -2,19 +2,39 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
 	datetime "github.com/EmilyOng/cvwo/backend/utils/datetime"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"github.com/EmilyOng/cvwo/backend/views"
 	"gorm.io/gorm"
 )
 
-func CreateTask(payload models.CreateTaskPayload) models.CreateTaskResponse {
-	var tags []*models.Tag
+const (
+	unableToCreateTaskMessage = "Unable to create task '%s'."
+	unableToUpdateTaskMessage = "Unable to update task (%s)."
+	unableToGetTaskMessage    = "Unable to retrieve task (%s)."
+	unableToDeleteTaskMessage = "Unable to delete task (%s)."
+	taskNotFoundMessage       = "The task cannot be found (%s)."
+
+	successfullyCreatedTaskMessage = "Successfully created task '%s'!"
+	successfullyUpdatedTaskMessage = "Successfully updated task '%s'!"
+	successfullyDeletedTaskMessage = "Successfully deleted task '%s'!"
+)
+
+func getTask(taskId string) (models.Task, error) {
+	task := models.Task{ID: taskId}
+	result := db.DB.Model(&task).Preload("Tags").Find(&task)
+	return task, result.Error
+}
+
+func CreateTask(payload views.CreateTaskPayload) views.CreateTaskResponse {
+	var tags []models.Tag
 	for _, tag := range payload.Tags {
-		tags = append(tags, &models.Tag{
+		tags = append(tags, models.Tag{
 			ID:      tag.ID,
 			Name:    tag.Name,
 			Color:   tag.Color,
@@ -35,25 +55,26 @@ func CreateTask(payload models.CreateTaskPayload) models.CreateTaskResponse {
 	}
 	err := db.DB.Create(&task).Error
 	if err != nil {
-		return models.CreateTaskResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.CreateTaskResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToCreateTaskMessage, payload.Name),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.CreateTaskResponse{
+	return views.CreateTaskResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyCreatedTaskMessage, task.Name),
+			Code:    http.StatusOK,
+		},
 		Task: task,
 	}
 }
 
-func getTask(taskId string) (models.Task, error) {
-	task := models.Task{ID: taskId}
-	result := db.DB.Model(&task).Preload("Tags").Find(&task)
-	return task, result.Error
-}
-
-func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
-	var tags []*models.Tag
+func UpdateTask(payload views.UpdateTaskPayload) views.UpdateTaskResponse {
+	var tags []models.Tag
 	for _, tag := range payload.Tags {
-		tags = append(tags, &models.Tag{
+		tags = append(tags, models.Tag{
 			ID:      tag.ID,
 			Name:    tag.Name,
 			Color:   tag.Color,
@@ -64,21 +85,27 @@ func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
 	task, err := getTask(payload.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.UpdateTaskResponse{
-				Response: errorUtils.MakeResponseErr(models.NotFound),
+			return views.UpdateTaskResponse{
+				Response: views.Response{
+					Message: fmt.Sprintf(taskNotFoundMessage, payload.ID),
+					Code:    http.StatusUnprocessableEntity,
+				},
 			}
 		}
-		return models.UpdateTaskResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.UpdateTaskResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToGetTaskMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
 
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
 		task.Name = payload.Name
 		task.Description = payload.Description
-		task.StateID = &payload.StateID
-		task.BoardID = &payload.BoardID
-		task.UserID = &payload.UserID
+		task.StateID = payload.StateID
+		task.BoardID = payload.BoardID
+		task.UserID = payload.UserID
 
 		if len(payload.DueAt) > 0 {
 			dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
@@ -94,39 +121,62 @@ func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
 	})
 
 	if err != nil {
-		return models.UpdateTaskResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.UpdateTaskResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToUpdateTaskMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	return models.UpdateTaskResponse{
+	return views.UpdateTaskResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyUpdatedTaskMessage, task.Name),
+			Code:    http.StatusOK,
+		},
 		Task: task,
 	}
 }
 
-func DeleteTask(payload models.DeleteTaskPayload) models.DeleteTaskResponse {
+func DeleteTask(payload views.DeleteTaskPayload) views.DeleteTaskResponse {
 	task, err := getTask(payload.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.DeleteTaskResponse{
-				Response: errorUtils.MakeResponseErr(models.NotFound),
+			return views.DeleteTaskResponse{
+				Response: views.Response{
+					Message: fmt.Sprintf(taskNotFoundMessage, payload.ID),
+					Code:    http.StatusUnprocessableEntity,
+				},
 			}
 		}
-		return models.DeleteTaskResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.DeleteTaskResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToGetTaskMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	// Remove the association between the task and its tags
-	err = db.DB.Model(&task).Association("Tags").Delete(&task.Tags)
+
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		// Remove the association between the task and its tags
+		err := tx.Model(&task).Association("Tags").Delete(&task.Tags)
+		if err != nil {
+			return err
+		}
+		return tx.Delete(&task).Error
+	})
+
 	if err != nil {
-		return models.DeleteTaskResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
+		return views.DeleteTaskResponse{
+			Response: views.Response{
+				Message: fmt.Sprintf(unableToDeleteTaskMessage, payload.ID),
+				Code:    http.StatusInternalServerError,
+			},
 		}
 	}
-	err = db.DB.Delete(&task).Error
-	if err != nil {
-		return models.DeleteTaskResponse{
-			Response: errorUtils.MakeResponseErr(models.ServerError),
-		}
+	return views.DeleteTaskResponse{
+		Response: views.Response{
+			Message: fmt.Sprintf(successfullyDeletedTaskMessage, task.Name),
+			Code:    http.StatusOK,
+		},
 	}
-	return models.DeleteTaskResponse{}
 }

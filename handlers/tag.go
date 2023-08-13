@@ -3,46 +3,51 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/EmilyOng/cvwo/backend/models"
 	tagService "github.com/EmilyOng/cvwo/backend/services/tag"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"github.com/EmilyOng/cvwo/backend/views"
 
 	"github.com/gin-gonic/gin"
 )
 
 func CreateTag(ctx *gin.Context) {
-	var payload models.CreateTagPayload
+	var payload views.CreateTagPayload
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: typeMismatchErrorMessage,
+				Code:    http.StatusBadRequest,
+			},
 		)
 		return
 	}
 
 	createTagResponse := tagService.CreateTag(payload)
-	ctx.JSON(errorUtils.MakeResponseCode(createTagResponse.Response), createTagResponse)
+	ctx.JSON(createTagResponse.Code, createTagResponse)
 }
 
 func DeleteTag(ctx *gin.Context) {
-	deleteTagResponse := tagService.DeleteTag(models.DeleteTagPayload{ID: ctx.Param("tag_id")})
-	ctx.JSON(errorUtils.MakeResponseCode(deleteTagResponse.Response), deleteTagResponse)
+	deleteTagResponse := tagService.DeleteTag(views.DeleteTagPayload{ID: ctx.Param("tag_id")})
+	ctx.JSON(deleteTagResponse.Code, deleteTagResponse)
 }
 
 func UpdateTag(ctx *gin.Context) {
-	var payload models.UpdateTagPayload
+	var payload views.UpdateTagPayload
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: typeMismatchErrorMessage,
+				Code:    http.StatusBadRequest,
+			},
 		)
 		return
 	}
 
 	updateTagResponse := tagService.UpdateTag(payload)
-	ctx.JSON(errorUtils.MakeResponseCode(updateTagResponse.Response), updateTagResponse)
+	ctx.JSON(updateTagResponse.Code, updateTagResponse)
 }

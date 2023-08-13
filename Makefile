@@ -10,25 +10,25 @@ start:
 generate-types:
 	rm -rf ../cvwo-frontend/src/generated
 	mkdir ../cvwo-frontend/src/generated
-	# Handle Enums
+	touch ../cvwo-frontend/src/generated/types.ts
+	# Handle Enums in types/color and types/role
 	echo "export enum Color {Turquoise = 'Turquoise', Blue = 'Blue', Cyan = 'Cyan', Green = 'Green', Yellow = 'Yellow', Red = 'Red'}" >> ../cvwo-frontend/src/generated/types.ts 
 	echo "export enum Role {Owner = 'Owner', Editor = 'Editor', Viewer = 'Viewer'}" >> ../cvwo-frontend/src/generated/types.ts 
-	echo "export enum ErrorCode {NotFound = 'not_found', ServerError = 'server_error', UnauthorizedError = 'unauthorized', TypeMismatch = 'type_mismatch', ConflictError = 'conflict'}" >> ../cvwo-frontend/src/generated/types.ts 
-	touch ../cvwo-frontend/src/generated/models.ts
+	touch ../cvwo-frontend/src/generated/views.ts
 	$(shell go env GOPATH)/bin/tscriptify \
-		-package=github.com/EmilyOng/cvwo/backend/models \
-		-target=../cvwo-frontend/src/generated/models.ts \
+		-package=github.com/EmilyOng/cvwo/backend/views \
+		-target=../cvwo-frontend/src/generated/views.ts \
 		-import="import { Color } from './types'" \
 		-import="import { Role } from './types'" \
-		-import="import { ErrorCode } from './types'" \
 		-interface \
-		models/board.go \
-		models/common.go \
-		models/member.go \
-		models/state.go \
-		models/tag.go \
-		models/task.go \
-		models/user.go
+		views/auth.go \
+		views/board.go \
+		views/member.go \
+		views/response.go \
+		views/state.go \
+		views/tag.go \
+		views/task.go \
+		views/user.go
 
 # Deploy application to Heroku
 push/heroku:

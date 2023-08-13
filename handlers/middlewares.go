@@ -3,11 +3,15 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/EmilyOng/cvwo/backend/models"
 	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"github.com/EmilyOng/cvwo/backend/views"
 
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	unauthorizedMessage      = "Unauthorized!"
+	typeMismatchErrorMessage = "Payload does not match expected type."
 )
 
 func SetAuthUser(ctx *gin.Context) {
@@ -20,14 +24,14 @@ func SetAuthUser(ctx *gin.Context) {
 		return
 	}
 
-	user := models.AuthUser{
+	authUserView := views.AuthUserView{
 		ID:    claims.UserID,
 		Name:  claims.UserName,
 		Email: claims.UserEmail,
 		Token: token,
 	}
 
-	ctx.Set(authUtils.UserKey, user)
+	ctx.Set(authUtils.UserKey, authUserView)
 }
 
 func AuthGuard(ctx *gin.Context) {
@@ -35,7 +39,10 @@ func AuthGuard(ctx *gin.Context) {
 	if userInterface == nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusUnauthorized,
-			errorUtils.MakeResponseErr(models.UnauthorizedError),
+			views.Response{
+				Message: unauthorizedMessage,
+				Code:    http.StatusUnauthorized,
+			},
 		)
 	}
 }

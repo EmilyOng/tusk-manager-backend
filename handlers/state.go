@@ -3,46 +3,51 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/EmilyOng/cvwo/backend/models"
 	stateService "github.com/EmilyOng/cvwo/backend/services/state"
-	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
+	"github.com/EmilyOng/cvwo/backend/views"
 
 	"github.com/gin-gonic/gin"
 )
 
 func CreateState(ctx *gin.Context) {
-	var payload models.CreateStatePayload
+	var payload views.CreateStatePayload
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: typeMismatchErrorMessage,
+				Code:    http.StatusBadRequest,
+			},
 		)
 		return
 	}
 
 	createStateResponse := stateService.CreateState(payload)
-	ctx.JSON(errorUtils.MakeResponseCode(createStateResponse.Response), createStateResponse)
+	ctx.JSON(createStateResponse.Code, createStateResponse)
 }
 
 func UpdateState(ctx *gin.Context) {
-	var payload models.UpdateStatePayload
+	var payload views.UpdateStatePayload
 
 	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
-			errorUtils.MakeResponseErr(models.ServerError),
+			views.Response{
+				Message: typeMismatchErrorMessage,
+				Code:    http.StatusBadRequest,
+			},
 		)
 		return
 	}
 
 	updateStateResponse := stateService.UpdateState(payload)
-	ctx.JSON(errorUtils.MakeResponseCode(updateStateResponse.Response), updateStateResponse)
+	ctx.JSON(updateStateResponse.Code, updateStateResponse)
 }
 
 func DeleteState(ctx *gin.Context) {
-	deleteStateResponse := stateService.DeleteState(models.DeleteStatePayload{ID: ctx.Param("state_id")})
-	ctx.JSON(errorUtils.MakeResponseCode(deleteStateResponse.Response), deleteStateResponse)
+	deleteStateResponse := stateService.DeleteState(views.DeleteStatePayload{ID: ctx.Param("state_id")})
+	ctx.JSON(deleteStateResponse.Code, deleteStateResponse)
 }
