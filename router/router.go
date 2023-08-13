@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/EmilyOng/cvwo/backend/controllers"
+	"github.com/EmilyOng/cvwo/backend/handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -15,54 +15,54 @@ func Setup() (router *gin.Engine) {
 		AllowCredentials: true,
 	}))
 
-	router.Use(controllers.SetAuthUser)
+	router.Use(handlers.SetAuthUser)
 
 	api := router.Group("/api")
 	{
 		auth := api.Group("/auth")
 		{
-			auth.POST("/login", controllers.Login)
-			auth.POST("/signup", controllers.SignUp)
-			auth.POST("/logout", controllers.Logout)
-			auth.GET("/", controllers.IsAuthenticated)
+			auth.POST("/login", handlers.Login)
+			auth.POST("/signup", handlers.SignUp)
+			auth.POST("/logout", handlers.Logout)
+			auth.GET("/", handlers.IsAuthenticated)
 		}
-		guard := api.Group("/", controllers.AuthGuard)
+		guard := api.Group("/", handlers.AuthGuard)
 		{
 			states := guard.Group("/states")
 			{
-				states.POST("/", controllers.CreateState)
-				states.PUT("/", controllers.UpdateState)
-				states.DELETE("/:state_id", controllers.DeleteState)
+				states.POST("/", handlers.CreateState)
+				states.PUT("/", handlers.UpdateState)
+				states.DELETE("/:state_id", handlers.DeleteState)
 			}
 			boards := guard.Group("/boards")
 			{
-				boards.GET("/", controllers.GetUserBoards)
-				boards.PUT("/", controllers.UpdateBoard)
-				boards.DELETE("/:board_id", controllers.DeleteBoard)
-				boards.GET("/:board_id", controllers.GetBoard)
-				boards.POST("/", controllers.CreateBoard)
-				boards.GET("/:board_id/tasks", controllers.GetBoardTasks)
-				boards.GET("/:board_id/tags", controllers.GetBoardTags)
-				boards.GET("/:board_id/states", controllers.GetBoardStates)
-				boards.GET("/:board_id/members", controllers.GetBoardMemberProfiles)
+				boards.GET("/", handlers.GetUserBoards)
+				boards.PUT("/", handlers.UpdateBoard)
+				boards.DELETE("/:board_id", handlers.DeleteBoard)
+				boards.GET("/:board_id", handlers.GetBoard)
+				boards.POST("/", handlers.CreateBoard)
+				boards.GET("/:board_id/tasks", handlers.GetBoardTasks)
+				boards.GET("/:board_id/tags", handlers.GetBoardTags)
+				boards.GET("/:board_id/states", handlers.GetBoardStates)
+				boards.GET("/:board_id/members", handlers.GetBoardMemberProfiles)
 			}
 			tasks := guard.Group("/tasks")
 			{
-				tasks.POST("/", controllers.CreateTask)
-				tasks.PUT("/", controllers.UpdateTask)
-				tasks.DELETE("/:task_id", controllers.DeleteTask)
+				tasks.POST("/", handlers.CreateTask)
+				tasks.PUT("/", handlers.UpdateTask)
+				tasks.DELETE("/:task_id", handlers.DeleteTask)
 			}
 			tags := guard.Group("/tags")
 			{
-				tags.POST("/", controllers.CreateTag)
-				tags.DELETE("/:tag_id", controllers.DeleteTag)
-				tags.PUT("/", controllers.UpdateTag)
+				tags.POST("/", handlers.CreateTag)
+				tags.DELETE("/:tag_id", handlers.DeleteTag)
+				tags.PUT("/", handlers.UpdateTag)
 			}
 			members := guard.Group("/members")
 			{
-				members.POST("/", controllers.CreateMember)
-				members.PUT("/", controllers.UpdateMember)
-				members.DELETE("/:member_id", controllers.DeleteMember)
+				members.POST("/", handlers.CreateMember)
+				members.PUT("/", handlers.UpdateMember)
+				members.DELETE("/:member_id", handlers.DeleteMember)
 			}
 		}
 	}
