@@ -11,12 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateTask(c *gin.Context) {
+func CreateTask(ctx *gin.Context) {
 	var payload models.CreateTaskPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -24,15 +24,15 @@ func CreateTask(c *gin.Context) {
 	}
 
 	createTaskResponse := taskService.CreateTask(payload)
-	c.JSON(errorUtils.MakeResponseCode(createTaskResponse.Response), createTaskResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(createTaskResponse.Response), createTaskResponse)
 }
 
-func UpdateTask(c *gin.Context) {
+func UpdateTask(ctx *gin.Context) {
 	var payload models.UpdateTaskPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -40,13 +40,13 @@ func UpdateTask(c *gin.Context) {
 	}
 
 	updateTaskResponse := taskService.UpdateTask(payload)
-	c.JSON(errorUtils.MakeResponseCode(updateTaskResponse.Response), updateTaskResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(updateTaskResponse.Response), updateTaskResponse)
 }
 
-func DeleteTask(c *gin.Context) {
+func DeleteTask(ctx *gin.Context) {
 	var taskId uint8
-	fmt.Sscan(c.Param("task_id"), &taskId)
+	fmt.Sscan(ctx.Param("task_id"), &taskId)
 
 	deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: taskId})
-	c.JSON(errorUtils.MakeResponseCode(deleteTaskResponse.Response), deleteTaskResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(deleteTaskResponse.Response), deleteTaskResponse)
 }

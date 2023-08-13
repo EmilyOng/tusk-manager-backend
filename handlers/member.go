@@ -11,12 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateMember(c *gin.Context) {
+func CreateMember(ctx *gin.Context) {
 	var payload models.CreateMemberPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -24,15 +24,15 @@ func CreateMember(c *gin.Context) {
 	}
 
 	createMemberResponse := memberService.CreateMember(payload)
-	c.JSON(errorUtils.MakeResponseCode(createMemberResponse.Response), createMemberResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(createMemberResponse.Response), createMemberResponse)
 }
 
-func UpdateMember(c *gin.Context) {
+func UpdateMember(ctx *gin.Context) {
 	var payload models.UpdateMemberPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -40,13 +40,13 @@ func UpdateMember(c *gin.Context) {
 	}
 
 	updateMemberResponse := memberService.UpdateMember(payload)
-	c.JSON(errorUtils.MakeResponseCode(updateMemberResponse.Response), updateMemberResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(updateMemberResponse.Response), updateMemberResponse)
 }
 
-func DeleteMember(c *gin.Context) {
+func DeleteMember(ctx *gin.Context) {
 	var memberID uint8
-	fmt.Sscan(c.Param("member_id"), &memberID)
+	fmt.Sscan(ctx.Param("member_id"), &memberID)
 
 	deleteMemberResponse := memberService.DeleteMember(models.DeleteMemberPayload{ID: memberID})
-	c.JSON(errorUtils.MakeResponseCode(deleteMemberResponse.Response), deleteMemberResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(deleteMemberResponse.Response), deleteMemberResponse)
 }

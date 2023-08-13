@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindMember(memberID uint8) (member models.MemberPrimitive, err error) {
+func FindMember(memberID uint8) (member models.Member, err error) {
 	err = db.DB.Model(&models.Member{}).Where("id = ?", memberID).Find(&member).Error
 	return
 }
@@ -32,7 +32,7 @@ func UpdateMember(payload models.UpdateMemberPayload) models.UpdateMemberRespons
 
 	// Update member's role
 	member.Role = payload.Role
-	err = db.DB.Model(&member).Save(&member).Error
+	err = db.DB.Save(&member).Error
 	if err != nil {
 		return models.UpdateMemberResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
@@ -127,7 +127,7 @@ func CreateMember(payload models.CreateMemberPayload) models.CreateMemberRespons
 		UserID:  user.ID,
 		BoardID: payload.BoardID,
 	}
-	err = db.DB.Model(&models.Member{}).Create(&member).Error
+	err = db.DB.Create(&member).Error
 	if err != nil {
 		return models.CreateMemberResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),

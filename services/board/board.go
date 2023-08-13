@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"log"
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -58,7 +57,7 @@ func CreateBoard(payload models.CreateBoardPayload) models.CreateBoardResponse {
 
 func GetBoard(payload models.GetBoardPayload) models.GetBoardResponse {
 	board := models.Board{ID: payload.ID}
-	result := db.DB.Where(&board).First(&board)
+	result := db.DB.Model(&models.Board{}).First(&board)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -166,10 +165,9 @@ func GetBoardMemberProfiles(payload models.GetBoardMemberProfilesPayload) models
 
 func UpdateBoard(payload models.UpdateBoardPayload) models.UpdateBoardResponse {
 	board := models.Board{ID: payload.ID, Name: payload.Name, Color: payload.Color}
-	result := db.DB.Model(&models.Board{ID: board.ID}).Save(&board)
-	if result.Error != nil {
-		log.Println(result.Error)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	err := db.DB.Save(&board).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.UpdateBoardResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
 			}

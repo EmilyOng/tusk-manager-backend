@@ -11,12 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateState(c *gin.Context) {
+func CreateState(ctx *gin.Context) {
 	var payload models.CreateStatePayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -24,15 +24,15 @@ func CreateState(c *gin.Context) {
 	}
 
 	createStateResponse := stateService.CreateState(payload)
-	c.JSON(errorUtils.MakeResponseCode(createStateResponse.Response), createStateResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(createStateResponse.Response), createStateResponse)
 }
 
-func UpdateState(c *gin.Context) {
+func UpdateState(ctx *gin.Context) {
 	var payload models.UpdateStatePayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -40,13 +40,13 @@ func UpdateState(c *gin.Context) {
 	}
 
 	updateStateResponse := stateService.UpdateState(payload)
-	c.JSON(errorUtils.MakeResponseCode(updateStateResponse.Response), updateStateResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(updateStateResponse.Response), updateStateResponse)
 }
 
-func DeleteState(c *gin.Context) {
+func DeleteState(ctx *gin.Context) {
 	var stateID uint8
-	fmt.Sscan(c.Param("state_id"), &stateID)
+	fmt.Sscan(ctx.Param("state_id"), &stateID)
 
 	deleteStateResponse := stateService.DeleteState(models.DeleteStatePayload{ID: stateID})
-	c.JSON(errorUtils.MakeResponseCode(deleteStateResponse.Response), deleteStateResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(deleteStateResponse.Response), deleteStateResponse)
 }

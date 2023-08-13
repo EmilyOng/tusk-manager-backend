@@ -11,12 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateTag(c *gin.Context) {
+func CreateTag(ctx *gin.Context) {
 	var payload models.CreateTagPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -24,23 +24,23 @@ func CreateTag(c *gin.Context) {
 	}
 
 	createTagResponse := tagService.CreateTag(payload)
-	c.JSON(errorUtils.MakeResponseCode(createTagResponse.Response), createTagResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(createTagResponse.Response), createTagResponse)
 }
 
-func DeleteTag(c *gin.Context) {
+func DeleteTag(ctx *gin.Context) {
 	var tagId uint8
-	fmt.Sscan(c.Param("tag_id"), &tagId)
+	fmt.Sscan(ctx.Param("tag_id"), &tagId)
 
 	deleteTagResponse := tagService.DeleteTag(models.DeleteTagPayload{ID: tagId})
-	c.JSON(errorUtils.MakeResponseCode(deleteTagResponse.Response), deleteTagResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(deleteTagResponse.Response), deleteTagResponse)
 }
 
-func UpdateTag(c *gin.Context) {
+func UpdateTag(ctx *gin.Context) {
 	var payload models.UpdateTagPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -48,5 +48,5 @@ func UpdateTag(c *gin.Context) {
 	}
 
 	updateTagResponse := tagService.UpdateTag(payload)
-	c.JSON(errorUtils.MakeResponseCode(updateTagResponse.Response), updateTagResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(updateTagResponse.Response), updateTagResponse)
 }

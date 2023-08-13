@@ -61,35 +61,38 @@ func CreateBoard(ctx *gin.Context) {
 	ctx.JSON(errorUtils.MakeResponseCode(createBoardResponse.Response), createBoardResponse)
 }
 
-func GetBoardTags(c *gin.Context) {
+func GetBoardTags(ctx *gin.Context) {
 	var boardID uint8
-	fmt.Sscan(c.Param("board_id"), &boardID)
+	fmt.Sscan(ctx.Param("board_id"), &boardID)
+
 	getBoardTagsResponse := boardService.GetBoardTags(models.GetBoardTagsPayload{BoardID: boardID})
-	c.JSON(errorUtils.MakeResponseCode(getBoardTagsResponse.Response), getBoardTagsResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(getBoardTagsResponse.Response), getBoardTagsResponse)
 }
 
-func GetBoardMemberProfiles(c *gin.Context) {
+func GetBoardMemberProfiles(ctx *gin.Context) {
 	var boardID uint8
-	fmt.Sscan(c.Param("board_id"), &boardID)
+	fmt.Sscan(ctx.Param("board_id"), &boardID)
+
 	getBoardMemberProfilesResponse := boardService.GetBoardMemberProfiles(
 		models.GetBoardMemberProfilesPayload{BoardID: boardID},
 	)
-	c.JSON(errorUtils.MakeResponseCode(getBoardMemberProfilesResponse.Response), getBoardMemberProfilesResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(getBoardMemberProfilesResponse.Response), getBoardMemberProfilesResponse)
 }
 
-func GetBoard(c *gin.Context) {
+func GetBoard(ctx *gin.Context) {
 	var boardID uint8
-	fmt.Sscan(c.Param("board_id"), &boardID)
+	fmt.Sscan(ctx.Param("board_id"), &boardID)
+
 	getBoardResponse := boardService.GetBoard(models.GetBoardPayload{ID: boardID})
-	c.JSON(errorUtils.MakeResponseCode(getBoardResponse.Response), getBoardResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(getBoardResponse.Response), getBoardResponse)
 }
 
-func UpdateBoard(c *gin.Context) {
+func UpdateBoard(ctx *gin.Context) {
 	var payload models.UpdateBoardPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
@@ -97,19 +100,21 @@ func UpdateBoard(c *gin.Context) {
 	}
 
 	updateBoardResponse := boardService.UpdateBoard(payload)
-	c.JSON(errorUtils.MakeResponseCode(updateBoardResponse.Response), updateBoardResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(updateBoardResponse.Response), updateBoardResponse)
 }
 
-func DeleteBoard(c *gin.Context) {
+func DeleteBoard(ctx *gin.Context) {
 	var boardID uint8
-	fmt.Sscan(c.Param("board_id"), &boardID)
+	fmt.Sscan(ctx.Param("board_id"), &boardID)
+
 	deleteBoardResponse := boardService.DeleteBoard(models.DeleteBoardPayload{ID: boardID})
-	c.JSON(errorUtils.MakeResponseCode(deleteBoardResponse.Response), deleteBoardResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(deleteBoardResponse.Response), deleteBoardResponse)
 }
 
-func GetBoardStates(c *gin.Context) {
+func GetBoardStates(ctx *gin.Context) {
 	var boardID uint8
-	fmt.Sscan(c.Param("board_id"), &boardID)
+	fmt.Sscan(ctx.Param("board_id"), &boardID)
+
 	getBoardStatesResponse := boardService.GetBoardStates(models.GetBoardStatesPayload{BoardID: boardID})
-	c.JSON(errorUtils.MakeResponseCode(getBoardStatesResponse.Response), getBoardStatesResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(getBoardStatesResponse.Response), getBoardStatesResponse)
 }

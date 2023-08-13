@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"github.com/EmilyOng/cvwo/backend/db"
@@ -31,12 +30,11 @@ func CreateTask(payload models.CreateTaskPayload) models.CreateTaskResponse {
 		UserID:      &payload.UserID,
 	}
 	if len(payload.DueAt) > 0 {
-		t, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
-		task.DueAt = &t
+		dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
+		task.DueAt = &dueAt
 	}
-	result := db.DB.Create(&task)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.DB.Create(&task).Error
+	if err != nil {
 		return models.CreateTaskResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
@@ -72,14 +70,13 @@ func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
 		UserID:      &payload.UserID,
 	}
 	if len(payload.DueAt) > 0 {
-		t, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
-		task.DueAt = &t
+		dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
+		task.DueAt = &dueAt
 	}
 
 	if len(task.Tags) != 0 {
 		err := db.DB.Model(&task).Association("Tags").Replace(&task.Tags)
 		if err != nil {
-			log.Println(err)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return models.UpdateTaskResponse{
 					Response: errorUtils.MakeResponseErr(models.NotFound),
@@ -90,10 +87,9 @@ func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
 			}
 		}
 	}
-	result := db.DB.Model(&task).Preload("Tags").Save(&task)
-	if result.Error != nil {
-		log.Print(result.Error)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	err := db.DB.Preload("Tags").Save(&task).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.UpdateTaskResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
 			}
@@ -110,7 +106,6 @@ func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
 func DeleteTask(payload models.DeleteTaskPayload) models.DeleteTaskResponse {
 	task, err := getTask(payload.ID)
 	if err != nil {
-		log.Println(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.DeleteTaskResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
@@ -120,14 +115,15 @@ func DeleteTask(payload models.DeleteTaskPayload) models.DeleteTaskResponse {
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+	// Remove the association between the task and its tags
 	err = db.DB.Model(&task).Association("Tags").Delete(&task.Tags)
 	if err != nil {
 		return models.DeleteTaskResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
-	result := db.DB.Delete(&task)
-	if result.Error != nil {
+	err = db.DB.Delete(&task).Error
+	if err != nil {
 		return models.DeleteTaskResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}

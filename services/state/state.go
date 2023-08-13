@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"log"
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -13,9 +12,9 @@ import (
 
 func CreateState(payload models.CreateStatePayload) models.CreateStateResponse {
 	state := models.State{Name: payload.Name, BoardID: &payload.BoardID, CurrentPosition: payload.CurrentPosition}
-	result := db.DB.Create(&state)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.DB.Create(&state).Error
+
+	if err != nil {
 		return models.CreateStateResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
@@ -32,10 +31,9 @@ func UpdateState(payload models.UpdateStatePayload) models.UpdateStateResponse {
 		BoardID:         &payload.BoardID,
 		CurrentPosition: payload.CurrentPosition,
 	}
-	result := db.DB.Model(&models.State{ID: state.ID}).Save(&state)
-	if result.Error != nil {
-		log.Println(result.Error)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	err := db.DB.Save(&state).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.UpdateStateResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
 			}
@@ -57,9 +55,12 @@ func UpdateState(payload models.UpdateStatePayload) models.UpdateStateResponse {
 
 func DeleteState(payload models.DeleteStatePayload) models.DeleteStateResponse {
 	state := models.State{ID: payload.ID}
-	tasks, err := getStateTasks(payload.ID)
+
+	// Get tasks associated with the state
+	var tasks []models.TaskPrimitive
+	err := db.DB.Model(&state).Association("Tasks").Find(&tasks)
+
 	if err != nil {
-		log.Println(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.DeleteStateResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
@@ -69,6 +70,7 @@ func DeleteState(payload models.DeleteStatePayload) models.DeleteStateResponse {
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+	// TODO: Delegate to a default state
 	for _, task := range tasks {
 		deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: task.ID})
 		if len(deleteTaskResponse.Error) > 0 {
@@ -78,19 +80,11 @@ func DeleteState(payload models.DeleteStatePayload) models.DeleteStateResponse {
 		}
 	}
 
-	result := db.DB.Delete(&state)
-	if result.Error != nil {
-		log.Print(result.Error)
+	err = db.DB.Delete(&state).Error
+	if err != nil {
 		return models.DeleteStateResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
 	return models.DeleteStateResponse{}
-}
-
-func getStateTasks(stateID uint8) ([]models.TaskPrimitive, error) {
-	state := models.State{ID: stateID}
-	var tasks []models.TaskPrimitive
-	err := db.DB.Model(&state).Association("Tasks").Find(&tasks)
-	return tasks, err
 }
