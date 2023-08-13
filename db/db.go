@@ -13,8 +13,7 @@ var DB *gorm.DB
 func Setup() (err error) {
 	// DB_URL := os.Getenv("DATABASE_URL")
 	// DB, err = gorm.Open(postgres.Open(DB_URL), &gorm.Config{})
-	t, err := gorm.Open(sqlite.Open("cvwo.db"), &gorm.Config{})
-	DB = t.Debug()
+	DB, err = gorm.Open(sqlite.Open("cvwo.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatalln("Invalid database configuration")
 		return

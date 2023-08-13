@@ -119,18 +119,16 @@ func DeleteMember(payload views.DeleteMemberPayload) views.DeleteMemberResponse 
 	}
 
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&models.Board{}).
-			Where("id = ?", member.BoardID).
+		err := tx.Model(&models.Board{ID: member.BoardID}).
 			Association("Members").
-			Delete(member)
+			Delete(&member)
 		if err != nil {
 			return err
 		}
 
-		err = tx.Model(&models.User{}).
-			Where("id = ?", member.UserID).
+		err = tx.Model(&models.User{ID: member.UserID}).
 			Association("Members").
-			Delete(member)
+			Delete(&member)
 		if err != nil {
 			return err
 		}
@@ -203,7 +201,7 @@ func CreateMember(payload views.CreateMemberPayload) views.CreateMemberResponse 
 	return views.CreateMemberResponse{
 		Response: views.Response{
 			Message: fmt.Sprintf(successfullyCreatedMemberMessage, user.Email),
-			Code:    http.StatusInternalServerError,
+			Code:    http.StatusOK,
 		},
 		Member: views.MemberFullView{
 			ID:   member.ID,
