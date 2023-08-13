@@ -8,18 +8,21 @@ import (
 )
 
 type Task struct {
-	ID          string     `gorm:"primary_key" json:"id"`
+	ID          string     `gorm:"primaryKey" json:"id"`
 	Name        string     `gorm:"not null" json:"name"`
 	Description string     `gorm:"default:''" json:"description"`
 	DueAt       *time.Time `json:"dueAt" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
 
-	Tags    []Tag  `gorm:"many2many:task_tags" json:"tags"`
+	Tags    []*Tag `gorm:"many2many:task_tags" json:"tags"`
 	UserID  string `json:"userId"`                  // Owner of the task
 	BoardID string `json:"boardId"`                 // Board that the task belongs to
 	StateID string `gorm:"not null" json:"stateId"` // State that the task is at
 }
 
-func (task *Task) BeforeCreate(tx *gorm.DB) (errr error) {
+func (task *Task) BeforeCreate(tx *gorm.DB) (err error) {
+	if len(task.ID) > 0 {
+		return
+	}
 	// Generates a new UUID
 	task.ID = uuid.NewString()
 	return

@@ -11,11 +11,14 @@ type Member struct {
 	Role roleTypes.Role `gorm:"not null" json:"role" ts_type:"Role"`
 
 	UserID  string `json:"userId"` // User ID of the board member
-	User    User   `json:"user"`
+	User    *User  `json:"user"`
 	BoardID string `json:"boardId"` // Board that the member belongs to
 }
 
-func (member *Member) BeforeCreate(tx *gorm.DB) (errr error) {
+func (member *Member) BeforeCreate(tx *gorm.DB) (err error) {
+	if len(member.ID) > 0 {
+		return
+	}
 	// Generates a new UUID
 	member.ID = uuid.NewString()
 	return

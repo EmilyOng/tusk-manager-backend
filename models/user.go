@@ -15,7 +15,10 @@ type User struct {
 	Tasks   []*Task   `json:"tasks"`        // Tasks that the user owns
 }
 
-func (user *User) BeforeCreate(tx *gorm.DB) (errr error) {
+func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if len(user.ID) > 0 {
+		return
+	}
 	// Generates a new UUID
 	user.ID = uuid.NewString()
 	return

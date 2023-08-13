@@ -27,14 +27,14 @@ const (
 
 func getTask(taskId string) (models.Task, error) {
 	task := models.Task{ID: taskId}
-	result := db.DB.Model(&task).Preload("Tags").Find(&task)
+	result := db.DB.Preload("Tags").Model(&task).Find(&task)
 	return task, result.Error
 }
 
 func CreateTask(payload views.CreateTaskPayload) views.CreateTaskResponse {
-	var tags []models.Tag
+	var tags []*models.Tag
 	for _, tag := range payload.Tags {
-		tags = append(tags, models.Tag{
+		tags = append(tags, &models.Tag{
 			ID:      tag.ID,
 			Name:    tag.Name,
 			Color:   tag.Color,
@@ -72,16 +72,6 @@ func CreateTask(payload views.CreateTaskPayload) views.CreateTaskResponse {
 }
 
 func UpdateTask(payload views.UpdateTaskPayload) views.UpdateTaskResponse {
-	var tags []models.Tag
-	for _, tag := range payload.Tags {
-		tags = append(tags, models.Tag{
-			ID:      tag.ID,
-			Name:    tag.Name,
-			Color:   tag.Color,
-			BoardID: tag.BoardID,
-		})
-	}
-
 	task, err := getTask(payload.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -101,6 +91,16 @@ func UpdateTask(payload views.UpdateTaskPayload) views.UpdateTaskResponse {
 	}
 
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		var tags []*models.Tag
+		for _, tag := range payload.Tags {
+			tags = append(tags, &models.Tag{
+				ID:      tag.ID,
+				Name:    tag.Name,
+				Color:   tag.Color,
+				BoardID: tag.BoardID,
+			})
+		}
+
 		task.Name = payload.Name
 		task.Description = payload.Description
 		task.StateID = payload.StateID
@@ -111,7 +111,8 @@ func UpdateTask(payload views.UpdateTaskPayload) views.UpdateTaskResponse {
 			dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
 			task.DueAt = &dueAt
 		}
-		err := tx.Save(&task).Error
+
+		err := tx.Model(&models.Task{ID: task.ID}).Save(&task).Error
 		if err != nil {
 			return err
 		}

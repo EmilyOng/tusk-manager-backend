@@ -34,7 +34,7 @@ func CreateBoard(payload views.CreateBoardPayload) views.CreateBoardResponse {
 		Role:   roleTypes.Owner,
 		UserID: payload.UserID,
 	}
-	board := models.Board{Name: payload.Name, Color: payload.Color, Members: []models.Member{owner}}
+	board := models.Board{Name: payload.Name, Color: payload.Color, Members: []*models.Member{&owner}}
 
 	err := db.DB.Transaction(func(tx *gorm.DB) error {
 		result := tx.Create(&board)
