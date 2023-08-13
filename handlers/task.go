@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -44,9 +43,6 @@ func UpdateTask(ctx *gin.Context) {
 }
 
 func DeleteTask(ctx *gin.Context) {
-	var taskId uint8
-	fmt.Sscan(ctx.Param("task_id"), &taskId)
-
-	deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: taskId})
+	deleteTaskResponse := taskService.DeleteTask(models.DeleteTaskPayload{ID: ctx.Param("task_id")})
 	ctx.JSON(errorUtils.MakeResponseCode(deleteTaskResponse.Response), deleteTaskResponse)
 }

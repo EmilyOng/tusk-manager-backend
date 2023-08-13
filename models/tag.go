@@ -1,25 +1,32 @@
 package models
 
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
 type Tag struct {
-	ID      uint8   `gorm:"primaryKey" json:"id"`
-	Name    string  `gorm:"not null" json:"name"`
-	Color   Color   `gorm:"not null" json:"color" ts_type:"Color"`
+	ID    string `gorm:"primaryKey" json:"id"`
+	Name  string `gorm:"not null" json:"name"`
+	Color Color  `gorm:"not null" json:"color" ts_type:"Color"`
+
 	Tasks   []*Task `gorm:"many2many:task_tags" json:"tasks"`
-	BoardID *uint8  `json:"boardId"` // Board that the tag belongs to
+	BoardID *string `json:"boardId"` // Board that the tag belongs to
 }
 
 type TagPrimitive struct {
-	ID      uint8  `json:"id"`
-	Name    string `json:"name"`
-	Color   Color  `json:"color" ts_type:"Color"`
-	BoardID *uint8 `json:"boardId"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Color Color  `json:"color" ts_type:"Color"`
+
+	BoardID *string `json:"boardId"`
 }
 
 // Create Tag
 type CreateTagPayload struct {
 	Name    string `json:"name"`
 	Color   Color  `json:"color" ts_type:"Color"`
-	BoardID uint8  `json:"boardId"`
+	BoardID string `json:"boardId"`
 }
 
 type CreateTagResponse struct {
@@ -29,9 +36,9 @@ type CreateTagResponse struct {
 
 // Update Tag
 type UpdateTagPayload struct {
-	ID      uint8  `json:"id"`
+	ID      string `json:"id"`
 	Name    string `json:"name"`
-	BoardID uint8  `json:"boardId"`
+	BoardID string `json:"boardId"`
 	Color   Color  `json:"color" ts_type:"Color"`
 }
 
@@ -42,9 +49,15 @@ type UpdateTagResponse struct {
 
 // Delete Tag
 type DeleteTagPayload struct {
-	ID uint8 `json:"id"`
+	ID string `json:"id"`
 }
 
 type DeleteTagResponse struct {
 	Response
+}
+
+func (tag *Tag) BeforeCreate(tx *gorm.DB) (errr error) {
+	// Generates a new UUID
+	tag.ID = uuid.NewString()
+	return
 }

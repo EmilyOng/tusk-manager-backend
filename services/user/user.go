@@ -17,9 +17,9 @@ func FindUser(email string) (models.User, error) {
 	return user, err
 }
 
-func GetUserBoards(userId uint8) ([]models.BoardPrimitive, error) {
+func GetUserBoards(userId string) ([]models.BoardPrimitive, error) {
 	var boards []models.BoardPrimitive
-	var boardIds []int
+	var boardIds []string
 
 	err := db.DB.Model(&models.Member{}).Where("user_id = ?", userId).Select("board_id").Find(&boardIds).Error
 	if err != nil {

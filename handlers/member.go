@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -44,9 +43,6 @@ func UpdateMember(ctx *gin.Context) {
 }
 
 func DeleteMember(ctx *gin.Context) {
-	var memberID uint8
-	fmt.Sscan(ctx.Param("member_id"), &memberID)
-
-	deleteMemberResponse := memberService.DeleteMember(models.DeleteMemberPayload{ID: memberID})
+	deleteMemberResponse := memberService.DeleteMember(models.DeleteMemberPayload{ID: ctx.Param("member_id")})
 	ctx.JSON(errorUtils.MakeResponseCode(deleteMemberResponse.Response), deleteMemberResponse)
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -44,9 +43,6 @@ func UpdateState(ctx *gin.Context) {
 }
 
 func DeleteState(ctx *gin.Context) {
-	var stateID uint8
-	fmt.Sscan(ctx.Param("state_id"), &stateID)
-
-	deleteStateResponse := stateService.DeleteState(models.DeleteStatePayload{ID: stateID})
+	deleteStateResponse := stateService.DeleteState(models.DeleteStatePayload{ID: ctx.Param("state_id")})
 	ctx.JSON(errorUtils.MakeResponseCode(deleteStateResponse.Response), deleteStateResponse)
 }

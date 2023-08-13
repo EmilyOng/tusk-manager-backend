@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindMember(memberID uint8) (member models.Member, err error) {
+func FindMember(memberID string) (member models.Member, err error) {
 	err = db.DB.Model(&models.Member{}).Where("id = ?", memberID).Find(&member).Error
 	return
 }
@@ -124,8 +124,8 @@ func CreateMember(payload models.CreateMemberPayload) models.CreateMemberRespons
 
 	member := models.Member{
 		Role:    payload.Role,
-		UserID:  user.ID,
-		BoardID: payload.BoardID,
+		UserID:  &user.ID,
+		BoardID: &payload.BoardID,
 	}
 	err = db.DB.Create(&member).Error
 	if err != nil {

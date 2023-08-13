@@ -13,7 +13,7 @@ import (
 func CreateBoard(payload models.CreateBoardPayload) models.CreateBoardResponse {
 	owner := models.Member{
 		Role:   models.Owner,
-		UserID: payload.UserID,
+		UserID: &payload.UserID,
 	}
 	board := models.Board{Name: payload.Name, Color: payload.Color, Members: []*models.Member{&owner}}
 
@@ -84,7 +84,7 @@ func GetBoardTasks(payload models.GetBoardTasksPayload) models.GetBoardTasksResp
 	var tasks []models.Task
 
 	err := db.DB.Model(&board).Order("tasks.name").Preload("Tags", func(db *gorm.DB) *gorm.DB {
-		return db.Order("tags.id")
+		return db.Order("tags.name")
 	}).Association("Tasks").Find(&tasks)
 	if err != nil {
 		return models.GetBoardTasksResponse{
@@ -151,7 +151,7 @@ func GetBoardMemberProfiles(payload models.GetBoardMemberProfilesPayload) models
 			ID:   member.ID,
 			Role: member.Role,
 			Profile: models.Profile{
-				ID:    member.UserID,
+				ID:    *member.UserID,
 				Name:  member.User.Name,
 				Email: member.User.Email,
 			},

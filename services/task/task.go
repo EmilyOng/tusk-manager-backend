@@ -24,10 +24,10 @@ func CreateTask(payload models.CreateTaskPayload) models.CreateTaskResponse {
 	task := models.Task{
 		Name:        payload.Name,
 		Description: payload.Description,
-		StateID:     &payload.StateID,
+		StateID:     payload.StateID,
 		Tags:        tags,
-		BoardID:     &payload.BoardID,
-		UserID:      &payload.UserID,
+		BoardID:     payload.BoardID,
+		UserID:      payload.UserID,
 	}
 	if len(payload.DueAt) > 0 {
 		dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
@@ -44,7 +44,7 @@ func CreateTask(payload models.CreateTaskPayload) models.CreateTaskResponse {
 	}
 }
 
-func getTask(taskId uint8) (models.Task, error) {
+func getTask(taskId string) (models.Task, error) {
 	task := models.Task{ID: taskId}
 	result := db.DB.Model(&task).Preload("Tags").Find(&task)
 	return task, result.Error
@@ -60,40 +60,40 @@ func UpdateTask(payload models.UpdateTaskPayload) models.UpdateTaskResponse {
 			BoardID: tag.BoardID,
 		})
 	}
-	task := models.Task{
-		ID:          payload.ID,
-		Name:        payload.Name,
-		Description: payload.Description,
-		StateID:     &payload.StateID,
-		Tags:        tags,
-		BoardID:     &payload.BoardID,
-		UserID:      &payload.UserID,
-	}
-	if len(payload.DueAt) > 0 {
-		dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
-		task.DueAt = &dueAt
-	}
 
-	if len(task.Tags) != 0 {
-		err := db.DB.Model(&task).Association("Tags").Replace(&task.Tags)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return models.UpdateTaskResponse{
-					Response: errorUtils.MakeResponseErr(models.NotFound),
-				}
-			}
-			return models.UpdateTaskResponse{
-				Response: errorUtils.MakeResponseErr(models.ServerError),
-			}
-		}
-	}
-	err := db.DB.Preload("Tags").Save(&task).Error
+	task, err := getTask(payload.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.UpdateTaskResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
 			}
 		}
+		return models.UpdateTaskResponse{
+			Response: errorUtils.MakeResponseErr(models.ServerError),
+		}
+	}
+
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		task.Name = payload.Name
+		task.Description = payload.Description
+		task.StateID = &payload.StateID
+		task.BoardID = &payload.BoardID
+		task.UserID = &payload.UserID
+
+		if len(payload.DueAt) > 0 {
+			dueAt, _ := time.Parse(datetime.DatetimeLayout, payload.DueAt)
+			task.DueAt = &dueAt
+		}
+		err := tx.Save(&task).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&task).Association("Tags").Replace(&tags)
+		return err
+	})
+
+	if err != nil {
 		return models.UpdateTaskResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}

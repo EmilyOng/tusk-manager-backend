@@ -13,7 +13,7 @@ import (
 
 type Claim struct {
 	jwt.StandardClaims
-	UserID    uint8
+	UserID    string
 	UserName  string
 	UserEmail string
 }

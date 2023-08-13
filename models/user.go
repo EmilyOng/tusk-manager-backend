@@ -1,23 +1,29 @@
 package models
 
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
 type User struct {
-	ID       uint8     `gorm:"primaryKey" json:"id"`
-	Name     string    `gorm:"not null" json:"name"`
-	Email    string    `gorm:"not null" json:"email"`
-	Password string    `gorm:"not null" json:"password"`
-	Members  []*Member `json:"boardMembers"` // Boards that the user can access
-	Tasks    []*Task   `json:"tasks"`        // Tasks that the user owns
+	ID       string `gorm:"primaryKey" json:"id"`
+	Name     string `gorm:"not null" json:"name"`
+	Email    string `gorm:"not null" json:"email"`
+	Password string `gorm:"not null" json:"password"`
+
+	Members []*Member `json:"boardMembers"` // Boards that the user can access
+	Tasks   []*Task   `json:"tasks"`        // Tasks that the user owns
 }
 
 type Profile struct {
-	ID    uint8  `json:"id"`
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
 // Auth User
 type AuthUser struct {
-	ID    uint8  `json:"id"`
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Token string `json:"token"`
@@ -55,4 +61,10 @@ type SignUpResponse struct {
 type GetUserBoardsResponse struct {
 	Response
 	Boards []BoardPrimitive `json:"data"`
+}
+
+func (user *User) BeforeCreate(tx *gorm.DB) (errr error) {
+	// Generates a new UUID
+	user.ID = uuid.NewString()
+	return
 }

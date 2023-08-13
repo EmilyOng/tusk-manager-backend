@@ -1,24 +1,31 @@
 package models
 
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
 type State struct {
-	ID              uint8   `gorm:"primaryKey" json:"id"`
-	Name            string  `gorm:"not null" json:"name"`
-	CurrentPosition int     `gorm:"not null" json:"currentPosition"` // Sort key
-	Tasks           []*Task `gorm:"not null" json:"tasks"`           // Tasks belonging to the state
-	BoardID         *uint8  `json:"boardId"`                         // Board that the state belongs to
+	ID              string `gorm:"primaryKey" json:"id"`
+	Name            string `gorm:"not null" json:"name"`
+	CurrentPosition int    `gorm:"not null" json:"currentPosition"` // Sort key
+
+	Tasks   []*Task `gorm:"not null" json:"tasks"` // Tasks belonging to the state
+	BoardID *string `json:"boardId"`               // Board that the state belongs to
 }
 
 type StatePrimitive struct {
-	ID              uint8  `json:"id"`
+	ID              string `json:"id"`
 	Name            string `json:"name"`
 	CurrentPosition int    `json:"currentPosition"`
-	BoardID         *uint8 `json:"boardId"`
+
+	BoardID *string `json:"boardId"`
 }
 
 // Create State
 type CreateStatePayload struct {
 	Name            string `json:"name"`
-	BoardID         uint8  `json:"boardId"`
+	BoardID         string `json:"boardId"`
 	CurrentPosition int    `json:"currentPosition"`
 }
 
@@ -29,9 +36,9 @@ type CreateStateResponse struct {
 
 // Update State
 type UpdateStatePayload struct {
-	ID              uint8  `json:"id"`
+	ID              string `json:"id"`
 	Name            string `json:"name"`
-	BoardID         uint8  `json:"boardId"`
+	BoardID         string `json:"boardId"`
 	CurrentPosition int    `json:"currentPosition"`
 }
 
@@ -42,9 +49,15 @@ type UpdateStateResponse struct {
 
 // Delete State
 type DeleteStatePayload struct {
-	ID uint8 `json:"id"`
+	ID string `json:"id"`
 }
 
 type DeleteStateResponse struct {
 	Response
+}
+
+func (state *State) BeforeCreate(tx *gorm.DB) (errr error) {
+	// Generates a new UUID
+	state.ID = uuid.NewString()
+	return
 }

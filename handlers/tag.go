@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/EmilyOng/cvwo/backend/models"
@@ -28,10 +27,7 @@ func CreateTag(ctx *gin.Context) {
 }
 
 func DeleteTag(ctx *gin.Context) {
-	var tagId uint8
-	fmt.Sscan(ctx.Param("tag_id"), &tagId)
-
-	deleteTagResponse := tagService.DeleteTag(models.DeleteTagPayload{ID: tagId})
+	deleteTagResponse := tagService.DeleteTag(models.DeleteTagPayload{ID: ctx.Param("tag_id")})
 	ctx.JSON(errorUtils.MakeResponseCode(deleteTagResponse.Response), deleteTagResponse)
 }
 

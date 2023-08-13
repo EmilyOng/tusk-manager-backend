@@ -15,7 +15,7 @@ func SeedData(user *models.User) (err error) {
 		Color: models.Cyan,
 		Members: []*models.Member{{
 			Role:   models.Owner,
-			UserID: user.ID,
+			UserID: &user.ID,
 		}},
 	}
 
@@ -71,7 +71,7 @@ func SeedData(user *models.User) (err error) {
 
 	// Create sample tasks for the current board
 	dueDate := time.Now().Add(24 * time.Hour)
-	tasks := []*models.Task{
+	tasks := []models.Task{
 		{
 			Name:        "Badminton Game @ Q",
 			Description: "The quick brown fox jumps over the lazy dog",

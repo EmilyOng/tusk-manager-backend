@@ -2,38 +2,44 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Task struct {
-	ID          uint8      `gorm:"primary_key" json:"id"`
+	ID          string     `gorm:"primary_key" json:"id"`
 	Name        string     `gorm:"not null" json:"name"`
 	Description string     `gorm:"default:''" json:"description"`
 	DueAt       *time.Time `json:"dueAt" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
-	Tags        []*Tag     `gorm:"many2many:task_tags" json:"tags"`
-	UserID      *uint8     `json:"userId"`                  // Owner of the task
-	BoardID     *uint8     `json:"boardId"`                 // Board that the task belongs to
-	StateID     *uint8     `gorm:"not null" json:"stateId"` // State that the task is at
+
+	Tags    []*Tag  `gorm:"many2many:task_tags" json:"tags"`
+	UserID  *string `json:"userId"`                  // Owner of the task
+	BoardID *string `json:"boardId"`                 // Board that the task belongs to
+	StateID *string `gorm:"not null" json:"stateId"` // State that the task is at
 }
 
 type TaskPrimitive struct {
-	ID          uint8      `json:"id"`
+	ID          string     `json:"id"`
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	DueAt       *time.Time `json:"dueAt" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
-	UserID      *uint8     `json:"userId"`
-	BoardID     *uint8     `json:"boardId"`
-	StateID     *uint8     `gorm:"not null" json:"stateId"`
+
+	UserID  *string `json:"userId"`
+	BoardID *string `json:"boardId"`
+	StateID *string `gorm:"not null" json:"stateId"`
 }
 
 // Create Task
 type CreateTaskPayload struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	DueAt       string          `json:"dueAt,omitempty" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
-	StateID     uint8           `json:"stateId"`
-	Tags        []*TagPrimitive `json:"tags"`
-	BoardID     uint8           `json:"boardId"`
-	UserID      uint8           `json:"userId"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	DueAt       string `json:"dueAt,omitempty" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
+
+	StateID *string         `json:"stateId"`
+	Tags    []*TagPrimitive `json:"tags"`
+	BoardID *string         `json:"boardId"`
+	UserID  *string         `json:"userId"`
 }
 
 type CreateTaskResponse struct {
@@ -43,14 +49,15 @@ type CreateTaskResponse struct {
 
 // Update Task
 type UpdateTaskPayload struct {
-	ID          uint8           `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	DueAt       string          `json:"dueAt,omitempty" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
-	StateID     uint8           `json:"stateId"`
-	Tags        []*TagPrimitive `json:"tags"`
-	BoardID     uint8           `json:"boardId"`
-	UserID      uint8           `json:"userId"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	DueAt       string `json:"dueAt,omitempty" ts_type:"Date" ts_transform:"new Date(__VALUE__)"`
+
+	StateID string         `json:"stateId"`
+	Tags    []TagPrimitive `json:"tags"`
+	BoardID string         `json:"boardId"`
+	UserID  string         `json:"userId"`
 }
 
 type UpdateTaskResponse struct {
@@ -60,9 +67,15 @@ type UpdateTaskResponse struct {
 
 // Delete Task
 type DeleteTaskPayload struct {
-	ID uint8 `json:"id"`
+	ID string `json:"id"`
 }
 
 type DeleteTaskResponse struct {
 	Response
+}
+
+func (task *Task) BeforeCreate(tx *gorm.DB) (errr error) {
+	// Generates a new UUID
+	task.ID = uuid.NewString()
+	return
 }

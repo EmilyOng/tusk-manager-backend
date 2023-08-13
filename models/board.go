@@ -1,9 +1,15 @@
 package models
 
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
 type Board struct {
-	ID      uint8     `gorm:"primary_key" json:"id"`
-	Name    string    `gorm:"not null" json:"name"`
-	Color   Color     `gorm:"not null" json:"color" ts_type:"Color"`
+	ID    string `gorm:"primaryKey" json:"id"`
+	Name  string `gorm:"not null" json:"name"`
+	Color Color  `gorm:"not null" json:"color" ts_type:"Color"`
+
 	Tasks   []*Task   `gorm:"not null" json:"tasks"`  // Tasks belonging to the board
 	Tags    []*Tag    `gorm:"not null" json:"tags"`   // Tags belonging to the board
 	States  []*State  `gorm:"not null" json:"states"` // States belonging to the board
@@ -11,14 +17,14 @@ type Board struct {
 }
 
 type BoardPrimitive struct {
-	ID    uint8  `json:"id"`
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Color Color  `json:"color" ts_type:"Color"`
 }
 
 // Get Board
 type GetBoardPayload struct {
-	ID uint8 `json:"id"`
+	ID string `json:"id"`
 }
 
 type GetBoardResponse struct {
@@ -30,7 +36,7 @@ type GetBoardResponse struct {
 type CreateBoardPayload struct {
 	Name   string `json:"name"`
 	Color  Color  `json:"color" ts_type:"Color"`
-	UserID uint8  `json:"userId"`
+	UserID string `json:"userId"`
 }
 
 type CreateBoardResponse struct {
@@ -40,10 +46,10 @@ type CreateBoardResponse struct {
 
 // Update Board
 type UpdateBoardPayload struct {
-	ID     uint8  `json:"id"`
+	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Color  Color  `json:"color" ts_type:"Color"`
-	UserID uint8  `json:"userId"`
+	UserID string `json:"userId"`
 }
 
 type UpdateBoardResponse struct {
@@ -53,7 +59,7 @@ type UpdateBoardResponse struct {
 
 // Get Board Tasks
 type GetBoardTasksPayload struct {
-	BoardID uint8 `json:"boardId"`
+	BoardID string `json:"boardId"`
 }
 
 type GetBoardTasksResponse struct {
@@ -63,7 +69,7 @@ type GetBoardTasksResponse struct {
 
 // Get Board Tags
 type GetBoardTagsPayload struct {
-	BoardID uint8 `json:"boardId"`
+	BoardID string `json:"boardId"`
 }
 
 type GetBoardTagsResponse struct {
@@ -73,7 +79,7 @@ type GetBoardTagsResponse struct {
 
 // Get Board Member Profiles
 type GetBoardMemberProfilesPayload struct {
-	BoardID uint8 `json:"boardId"`
+	BoardID string `json:"boardId"`
 }
 
 type GetBoardMemberProfilesResponse struct {
@@ -83,7 +89,7 @@ type GetBoardMemberProfilesResponse struct {
 
 // Get Board States
 type GetBoardStatesPayload struct {
-	BoardID uint8 `json:"boardId"`
+	BoardID string `json:"boardId"`
 }
 
 type GetBoardStatesResponse struct {
@@ -93,9 +99,15 @@ type GetBoardStatesResponse struct {
 
 // Delete Board
 type DeleteBoardPayload struct {
-	ID uint8 `json:"id"`
+	ID string `json:"id"`
 }
 
 type DeleteBoardResponse struct {
 	Response
+}
+
+func (board *Board) BeforeCreate(tx *gorm.DB) (errr error) {
+	// Generates a new UUID
+	board.ID = uuid.NewString()
+	return
 }
