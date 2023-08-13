@@ -6,7 +6,7 @@ import (
 
 	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
-	memberService "github.com/EmilyOng/cvwo/backend/services/member"
+	commonUtils "github.com/EmilyOng/cvwo/backend/utils/common"
 	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
 	"gorm.io/gorm"
 )
@@ -14,16 +14,39 @@ import (
 func CreateBoard(payload models.CreateBoardPayload) models.CreateBoardResponse {
 	owner := models.Member{
 		Role:   models.Owner,
-		UserID: &payload.UserID,
+		UserID: payload.UserID,
 	}
 	board := models.Board{Name: payload.Name, Color: payload.Color, Members: []*models.Member{&owner}}
-	result := db.DB.Create(&board)
-	if result.Error != nil {
-		log.Println(result.Error)
+
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		result := tx.Create(&board)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		var states []*models.State
+		for i, state := range commonUtils.GetDefaultStates() {
+			states = append(states, &models.State{
+				Name:            state,
+				CurrentPosition: i,
+				BoardID:         &board.ID,
+			})
+		}
+
+		result = tx.Create(&states)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return models.CreateBoardResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	return models.CreateBoardResponse{
 		Board: models.BoardPrimitive{
 			ID:    board.ID,
@@ -36,8 +59,8 @@ func CreateBoard(payload models.CreateBoardPayload) models.CreateBoardResponse {
 func GetBoard(payload models.GetBoardPayload) models.GetBoardResponse {
 	board := models.Board{ID: payload.ID}
 	result := db.DB.Where(&board).First(&board)
+
 	if result.Error != nil {
-		log.Println(result.Error)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return models.GetBoardResponse{
 				Response: errorUtils.MakeResponseErr(models.NotFound),
@@ -47,6 +70,7 @@ func GetBoard(payload models.GetBoardPayload) models.GetBoardResponse {
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	return models.GetBoardResponse{
 		Board: models.BoardPrimitive{
 			ID:    board.ID,
@@ -59,15 +83,16 @@ func GetBoard(payload models.GetBoardPayload) models.GetBoardResponse {
 func GetBoardTasks(payload models.GetBoardTasksPayload) models.GetBoardTasksResponse {
 	board := models.Board{ID: payload.BoardID}
 	var tasks []models.Task
+
 	err := db.DB.Model(&board).Order("tasks.name").Preload("Tags", func(db *gorm.DB) *gorm.DB {
 		return db.Order("tags.id")
 	}).Association("Tasks").Find(&tasks)
 	if err != nil {
-		log.Println(err)
 		return models.GetBoardTasksResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	return models.GetBoardTasksResponse{
 		Tasks: tasks,
 	}
@@ -78,11 +103,11 @@ func GetBoardTags(payload models.GetBoardTagsPayload) models.GetBoardTagsRespons
 	var tags []models.TagPrimitive
 	err := db.DB.Model(&board).Order("tags.id").Association("Tags").Find(&tags)
 	if err != nil {
-		log.Println(err)
 		return models.GetBoardTagsResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	return models.GetBoardTagsResponse{
 		Tags: tags,
 	}
@@ -93,36 +118,47 @@ func GetBoardStates(payload models.GetBoardStatesPayload) models.GetBoardStatesR
 	var states []models.StatePrimitive
 	err := db.DB.Model(&board).Order("states.current_position").Association("States").Find(&states)
 	if err != nil {
-		log.Println(err)
 		return models.GetBoardStatesResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	return models.GetBoardStatesResponse{
 		States: states,
 	}
 }
 
 func GetBoardMemberProfiles(payload models.GetBoardMemberProfilesPayload) models.GetBoardMemberProfilesResponse {
-	var members []models.MemberPrimitive
-	err := db.DB.Model(&models.Board{ID: payload.BoardID}).Association("Members").Find(&members)
+	var members []models.Member
+
+	err := db.DB.
+		Preload("User", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("id", "name", "email")
+		}).
+		Model(&models.Member{}).
+		Where("board_id = ?", payload.BoardID).
+		Find(&members).
+		Error
+
 	if err != nil {
-		log.Println(err)
 		return models.GetBoardMemberProfilesResponse{
 			Response: errorUtils.MakeResponseErr(models.ServerError),
 		}
 	}
+
 	var memberProfiles []models.MemberProfile
 	for _, member := range members {
-		memberProfile, err := memberService.MakeMemberProfile(member)
-		if err != nil {
-			log.Println(err)
-			return models.GetBoardMemberProfilesResponse{
-				Response: errorUtils.MakeResponseErr(models.ServerError),
-			}
-		}
-		memberProfiles = append(memberProfiles, memberProfile)
+		memberProfiles = append(memberProfiles, models.MemberProfile{
+			ID:   member.ID,
+			Role: member.Role,
+			Profile: models.Profile{
+				ID:    member.UserID,
+				Name:  member.User.Name,
+				Email: member.User.Email,
+			},
+		})
 	}
+
 	return models.GetBoardMemberProfilesResponse{
 		MemberProfiles: memberProfiles,
 	}

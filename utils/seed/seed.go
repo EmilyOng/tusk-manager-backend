@@ -15,7 +15,7 @@ func SeedData(user *models.User) (err error) {
 		Color: models.Cyan,
 		Members: []*models.Member{{
 			Role:   models.Owner,
-			UserID: &user.ID,
+			UserID: user.ID,
 		}},
 	}
 

@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/EmilyOng/cvwo/backend/db"
 	"github.com/EmilyOng/cvwo/backend/models"
 	boardService "github.com/EmilyOng/cvwo/backend/services/board"
 	userService "github.com/EmilyOng/cvwo/backend/services/user"
 	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
-	commonUtils "github.com/EmilyOng/cvwo/backend/utils/common"
 	errorUtils "github.com/EmilyOng/cvwo/backend/utils/error"
 
 	"github.com/gin-gonic/gin"
@@ -39,43 +37,28 @@ func GetUserBoards(ctx *gin.Context) {
 	})
 }
 
-func GetBoardTasks(c *gin.Context) {
+func GetBoardTasks(ctx *gin.Context) {
 	var boardID uint8
-	fmt.Sscan(c.Param("board_id"), &boardID)
+	fmt.Sscan(ctx.Param("board_id"), &boardID)
+
 	getBoardTasksResponse := boardService.GetBoardTasks(models.GetBoardTasksPayload{BoardID: boardID})
-	c.JSON(errorUtils.MakeResponseCode(getBoardTasksResponse.Response), getBoardTasksResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(getBoardTasksResponse.Response), getBoardTasksResponse)
 }
 
-func CreateBoard(c *gin.Context) {
+func CreateBoard(ctx *gin.Context) {
 	var payload models.CreateBoardPayload
 
-	err := c.ShouldBindJSON(&payload)
+	err := ctx.ShouldBindJSON(&payload)
 	if err != nil {
-		c.AbortWithStatusJSON(
+		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			errorUtils.MakeResponseErr(models.ServerError),
 		)
 		return
 	}
 
-	var states []*models.State
-	for i, state := range commonUtils.GetDefaultStates() {
-		states = append(states, &models.State{
-			Name:            state,
-			CurrentPosition: i,
-		})
-	}
-
-	res := db.DB.Create(&states)
-	if err = res.Error; err != nil {
-		c.AbortWithStatusJSON(
-			http.StatusInternalServerError,
-			errorUtils.MakeResponseErr(models.ServerError),
-		)
-	}
-
 	createBoardResponse := boardService.CreateBoard(payload)
-	c.JSON(errorUtils.MakeResponseCode(createBoardResponse.Response), createBoardResponse)
+	ctx.JSON(errorUtils.MakeResponseCode(createBoardResponse.Response), createBoardResponse)
 }
 
 func GetBoardTags(c *gin.Context) {
