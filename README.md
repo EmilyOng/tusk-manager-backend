@@ -1,15 +1,15 @@
 # backend
 
-[![Deploy backend](https://github.com/EmilyOng/cvwo-backend/actions/workflows/deploy-backend.yml/badge.svg?branch=main)](https://github.com/EmilyOng/cvwo-backend/actions/workflows/deploy-backend.yml)
+[![Deploy backend](https://github.com/EmilyOng/tusk-manager-backend/actions/workflows/deploy-backend.yml/badge.svg?branch=main)](https://github.com/EmilyOng/tusk-manager-backend/actions/workflows/deploy-backend.yml)
 
-Backend API: https://tusk-manager-backend.herokuapp.com/
+Backend API: https://tusk-manager-backend.onrender.com
 
 ## Getting Started
 
 Clone the repository.
 
 ```shell
-git clone https://github.com/EmilyOng/cvwo-backend.git
+git clone https://github.com/EmilyOng/tusk-manager-backend.git
 ```
 
 ### Prerequisites
@@ -22,17 +22,23 @@ git clone https://github.com/EmilyOng/cvwo-backend.git
 ### Folder Structure
 ```
 .
-├── controllers # Handles incoming API requests
-├── db          # Creates database connection
-├── models      # Contains structs definitions
-├── services    # Contains API logics
-├── utils       # Contains useful utility functions
+├── constants   # Stores constants used in the application
+├── db          # Handles database connection and migration
+├── handlers    # Handles incoming API requests
+├── models      # Contains structs definitions for gorm
+├── router      # Defines routes for the application
+├── services    # Data access layer handling business logic that interfaces
+├                 between the contollers layer and database systems
+├── types       # Defines reusable types in the application
+├── utils       # Contains utility functions
+├── views       # Defines payloads/responses structs for the API resources
+├                 shared with frontend
 └── main.go     # Entry point to the application
 ```
 
 ### Setting up your environment
 - (in `.env`) `AUTH_SECRET_KEY`: Requires any string
-- (in `.env`) `DATABASE_URL`: The url is obtained by executing the command `heroku config:get DATABASE_URL -a tusk-manager-backend`. Refer to this [article](https://devcenter.heroku.com/articles/connecting-to-heroku-postgres-databases-from-outside-of-heroku) for more information.
+- (in `.env`) `DATABASE_URL`: The URL is obtained from Render's PostgreSQL deployment.
 
 ### Developing the application
 
@@ -45,32 +51,20 @@ Finally, there are several quick shortcuts to make development easier.
 - Start the application: `make start`
   - The application uses [cosmtrek/air](https://github.com/cosmtrek/air) to provide live reload utility. Now, you can make changes to the files and the application will auto-reload.
 - Generate types: `make generate-types`
-  - This command generates TypeScript interfaces based on the Golang structs provided in [models](models) to ensure parity of types.
+  - This command generates TypeScript interfaces based on the Golang structs provided in [views](views) to ensure parity of types.
 
 ### Infrastructure
 
-This application is hosted on [Heroku](https://www.heroku.com/), which can be found at https://tusk-manager-backend.herokuapp.com/.
+This application is hosted on [Render](https://render.com/), which can be found at https://tusk-manager-backend.onrender.com.
 
-Note that Heroku does not handle environment variables from a `.env` file. Instead, it is configured directly from the Heroku dashboard, or CLI (more information [here](https://devcenter.heroku.com/articles/config-vars)).
+Extra work is required to define the environment variables in Render ([guide](https://render.com/docs/configure-environment-variables)).
 
-**Provisioning Heroku Postgres**
+**Provisioning Render Postgres**
 
-> [Heroku Postgres](https://elements.heroku.com/addons/heroku-postgresql) is a managed SQL database service provided directly by Heroku.
-
-```shell
-heroku addons:create heroku-postgresql:hobby-dev -a tusk-manager-backend
-```
-
-**Accessing Heroku Postgres**
-
-> Note: Make sure that [Postgres CLI Tools](http://postgresapp.com/documentation/cli-tools.html) is installed.
-
-```shell
-heroku pg:psql -a tusk-manager-backend
-```
+> [Render Postgres](https://render.com/docs/databases) is a managed Postgres database service provided directly by Render.
 
 ### Deployment
 Deployment is automatically handled by Github Actions when you push to the `main` branch of the repository.
 
-- [**Github Actions**] [Deploy to Heroku](.github/workflows/deploy-backend.yml): `make push/heroku`
-  - The deployment builds a Docker image and pushes to Heroku. More details on the Docker image at [Dockerfile](/backend/Dockerfile).
+- [**Github Actions**] [Deploy to Render](.github/workflows/deploy-backend.yml):
+  - The deployment builds a Docker image and pushes to Render. More details on the Docker image at [Dockerfile](/backend/Dockerfile).
