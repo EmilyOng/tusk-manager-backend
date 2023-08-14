@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/EmilyOng/cvwo/backend/models"
-	userService "github.com/EmilyOng/cvwo/backend/services/user"
-	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
-	seedUtils "github.com/EmilyOng/cvwo/backend/utils/seed"
-	"github.com/EmilyOng/cvwo/backend/views"
+	"github.com/EmilyOng/tusk-manager/backend/models"
+	userService "github.com/EmilyOng/tusk-manager/backend/services/user"
+	authUtils "github.com/EmilyOng/tusk-manager/backend/utils/auth"
+	seedUtils "github.com/EmilyOng/tusk-manager/backend/utils/seed"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

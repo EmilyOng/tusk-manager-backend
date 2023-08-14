@@ -3,10 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	boardService "github.com/EmilyOng/cvwo/backend/services/board"
-	userService "github.com/EmilyOng/cvwo/backend/services/user"
-	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
-	"github.com/EmilyOng/cvwo/backend/views"
+	boardService "github.com/EmilyOng/tusk-manager/backend/services/board"
+	userService "github.com/EmilyOng/tusk-manager/backend/services/user"
+	authUtils "github.com/EmilyOng/tusk-manager/backend/utils/auth"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 )

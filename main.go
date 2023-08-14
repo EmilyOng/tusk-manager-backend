@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/EmilyOng/cvwo/backend/db"
-	"github.com/EmilyOng/cvwo/backend/router"
+	"github.com/EmilyOng/tusk-manager/backend/db"
+	"github.com/EmilyOng/tusk-manager/backend/router"
 	"github.com/joho/godotenv"
 )
 

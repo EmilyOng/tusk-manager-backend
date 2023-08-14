@@ -1,7 +1,7 @@
 package models
 
 import (
-	roleTypes "github.com/EmilyOng/cvwo/backend/types/role"
+	roleTypes "github.com/EmilyOng/tusk-manager/backend/types/role"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

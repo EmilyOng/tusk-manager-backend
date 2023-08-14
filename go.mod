@@ -1,4 +1,4 @@
-module github.com/EmilyOng/cvwo/backend
+module github.com/EmilyOng/tusk-manager/backend
 
 go 1.17
 

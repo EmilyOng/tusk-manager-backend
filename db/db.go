@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/EmilyOng/cvwo/backend/models"
+	"github.com/EmilyOng/tusk-manager/backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

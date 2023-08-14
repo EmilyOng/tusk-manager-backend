@@ -1,9 +1,9 @@
 package views
 
 import (
-	colorTypes "github.com/EmilyOng/cvwo/backend/types/color"
+	colorTypes "github.com/EmilyOng/tusk-manager/backend/types/color"
 
-	"github.com/EmilyOng/cvwo/backend/models"
+	"github.com/EmilyOng/tusk-manager/backend/models"
 )
 
 type BoardMinimalView struct {

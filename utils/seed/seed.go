@@ -3,10 +3,10 @@ package models
 import (
 	"time"
 
-	"github.com/EmilyOng/cvwo/backend/db"
-	"github.com/EmilyOng/cvwo/backend/models"
-	colorTypes "github.com/EmilyOng/cvwo/backend/types/color"
-	roleTypes "github.com/EmilyOng/cvwo/backend/types/role"
+	"github.com/EmilyOng/tusk-manager/backend/db"
+	"github.com/EmilyOng/tusk-manager/backend/models"
+	colorTypes "github.com/EmilyOng/tusk-manager/backend/types/color"
+	roleTypes "github.com/EmilyOng/tusk-manager/backend/types/role"
 )
 
 // Generates sample seed data

@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	tagService "github.com/EmilyOng/cvwo/backend/services/tag"
-	"github.com/EmilyOng/cvwo/backend/views"
+	tagService "github.com/EmilyOng/tusk-manager/backend/services/tag"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 )

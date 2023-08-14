@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	stateService "github.com/EmilyOng/cvwo/backend/services/state"
-	"github.com/EmilyOng/cvwo/backend/views"
+	stateService "github.com/EmilyOng/tusk-manager/backend/services/state"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 )

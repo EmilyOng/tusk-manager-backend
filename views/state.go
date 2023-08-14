@@ -1,6 +1,6 @@
 package views
 
-import "github.com/EmilyOng/cvwo/backend/models"
+import "github.com/EmilyOng/tusk-manager/backend/models"
 
 type StateMinimalView struct {
 	ID              string `json:"id"`

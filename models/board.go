@@ -1,7 +1,7 @@
 package models
 
 import (
-	colorTypes "github.com/EmilyOng/cvwo/backend/types/color"
+	colorTypes "github.com/EmilyOng/tusk-manager/backend/types/color"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

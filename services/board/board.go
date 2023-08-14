@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/EmilyOng/cvwo/backend/db"
-	"github.com/EmilyOng/cvwo/backend/models"
-	roleTypes "github.com/EmilyOng/cvwo/backend/types/role"
-	commonUtils "github.com/EmilyOng/cvwo/backend/utils/common"
-	"github.com/EmilyOng/cvwo/backend/views"
+	"github.com/EmilyOng/tusk-manager/backend/db"
+	"github.com/EmilyOng/tusk-manager/backend/models"
+	roleTypes "github.com/EmilyOng/tusk-manager/backend/types/role"
+	commonUtils "github.com/EmilyOng/tusk-manager/backend/utils/common"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 	"gorm.io/gorm"
 )
 

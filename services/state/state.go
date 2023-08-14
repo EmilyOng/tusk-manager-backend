@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/EmilyOng/cvwo/backend/db"
-	"github.com/EmilyOng/cvwo/backend/models"
-	"github.com/EmilyOng/cvwo/backend/views"
+	"github.com/EmilyOng/tusk-manager/backend/db"
+	"github.com/EmilyOng/tusk-manager/backend/models"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 	"gorm.io/gorm"
 )
 

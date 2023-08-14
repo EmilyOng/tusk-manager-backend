@@ -8,16 +8,16 @@ start:
 
 # Generate types to be used on frontend
 generate-types:
-	rm -rf ../cvwo-frontend/src/generated
-	mkdir ../cvwo-frontend/src/generated
-	touch ../cvwo-frontend/src/generated/types.ts
+	rm -rf ../tusk-manager-frontend/src/generated
+	mkdir ../tusk-manager-frontend/src/generated
+	touch ../tusk-manager-frontend/src/generated/types.ts
 	# Handle Enums in types/color and types/role
-	echo "export enum Color {Turquoise = 'Turquoise', Blue = 'Blue', Cyan = 'Cyan', Green = 'Green', Yellow = 'Yellow', Red = 'Red'}" >> ../cvwo-frontend/src/generated/types.ts 
-	echo "export enum Role {Owner = 'Owner', Editor = 'Editor', Viewer = 'Viewer'}" >> ../cvwo-frontend/src/generated/types.ts 
-	touch ../cvwo-frontend/src/generated/views.ts
+	echo "export enum Color {Turquoise = 'Turquoise', Blue = 'Blue', Cyan = 'Cyan', Green = 'Green', Yellow = 'Yellow', Red = 'Red'}" >> ../tusk-manager-frontend/src/generated/types.ts 
+	echo "export enum Role {Owner = 'Owner', Editor = 'Editor', Viewer = 'Viewer'}" >> ../tusk-manager-frontend/src/generated/types.ts 
+	touch ../tusk-manager-frontend/src/generated/views.ts
 	$(shell go env GOPATH)/bin/tscriptify \
-		-package=github.com/EmilyOng/cvwo/backend/views \
-		-target=../cvwo-frontend/src/generated/views.ts \
+		-package=github.com/EmilyOng/tusk-manager/backend/views \
+		-target=../tusk-manager-frontend/src/generated/views.ts \
 		-import="import { Color } from './types'" \
 		-import="import { Role } from './types'" \
 		-interface \

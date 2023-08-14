@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	taskService "github.com/EmilyOng/cvwo/backend/services/task"
-	"github.com/EmilyOng/cvwo/backend/views"
+	taskService "github.com/EmilyOng/tusk-manager/backend/services/task"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 )

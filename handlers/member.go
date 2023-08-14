@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	memberService "github.com/EmilyOng/cvwo/backend/services/member"
-	"github.com/EmilyOng/cvwo/backend/views"
+	memberService "github.com/EmilyOng/tusk-manager/backend/services/member"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 )

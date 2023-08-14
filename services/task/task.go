@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/EmilyOng/cvwo/backend/db"
-	"github.com/EmilyOng/cvwo/backend/models"
-	datetime "github.com/EmilyOng/cvwo/backend/utils/datetime"
-	"github.com/EmilyOng/cvwo/backend/views"
+	"github.com/EmilyOng/tusk-manager/backend/db"
+	"github.com/EmilyOng/tusk-manager/backend/models"
+	datetime "github.com/EmilyOng/tusk-manager/backend/utils/datetime"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 	"gorm.io/gorm"
 )
 

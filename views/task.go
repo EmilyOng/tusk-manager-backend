@@ -3,7 +3,7 @@ package views
 import (
 	"time"
 
-	"github.com/EmilyOng/cvwo/backend/models"
+	"github.com/EmilyOng/tusk-manager/backend/models"
 )
 
 type TaskMinimalView struct {

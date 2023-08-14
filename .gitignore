@@ -1,6 +1,6 @@
 .DS_Store
 vendor/
 tmp/
-cvwo.db
+tusk-manager.db
 .env
 main

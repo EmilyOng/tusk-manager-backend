@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/EmilyOng/cvwo/backend/constants"
-	"github.com/EmilyOng/cvwo/backend/handlers"
+	"github.com/EmilyOng/tusk-manager/backend/constants"
+	"github.com/EmilyOng/tusk-manager/backend/handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )

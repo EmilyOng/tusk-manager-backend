@@ -1,7 +1,7 @@
 package views
 
 import (
-	roleTypes "github.com/EmilyOng/cvwo/backend/types/role"
+	roleTypes "github.com/EmilyOng/tusk-manager/backend/types/role"
 )
 
 type MemberMinimalView struct {

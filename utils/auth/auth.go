@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/EmilyOng/cvwo/backend/models"
+	"github.com/EmilyOng/tusk-manager/backend/models"
 
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"

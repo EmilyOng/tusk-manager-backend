@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	authUtils "github.com/EmilyOng/cvwo/backend/utils/auth"
-	"github.com/EmilyOng/cvwo/backend/views"
+	authUtils "github.com/EmilyOng/tusk-manager/backend/utils/auth"
+	"github.com/EmilyOng/tusk-manager/backend/views"
 
 	"github.com/gin-gonic/gin"
 )
