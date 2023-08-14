@@ -29,10 +29,3 @@ generate-types:
 		views/tag.go \
 		views/task.go \
 		views/user.go
-
-# Deploy application to Heroku
-push/heroku:
-	heroku container:login
-	heroku container:push web -a tusk-manager-backend
-	heroku container:release web -a tusk-manager-backend
-	

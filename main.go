@@ -10,15 +10,21 @@ import (
 
 func main() {
 	// Load any environment variables
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalln("Unable to load environment variables", err)
+	}
 
 	// Database setup
-	err := db.Setup()
+	err = db.Setup()
 	if err != nil {
 		log.Fatalln("Unable to setup database", err)
 	}
 
 	// Router setup
 	router := router.Setup()
-	router.Run()
+	err = router.Run()
+	if err != nil {
+		log.Fatalln("Unable to run the router", err)
+	}
 }

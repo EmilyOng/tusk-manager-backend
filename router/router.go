@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/EmilyOng/cvwo/backend/constants"
 	"github.com/EmilyOng/cvwo/backend/handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,7 @@ import (
 func Setup() (router *gin.Engine) {
 	router = gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://tusk-manager.vercel.app", "https://app.tuskmanager.rocks"},
+		AllowOrigins:     []string{constants.FrontendLocalHostUrl, constants.FrontendProductionUrl},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

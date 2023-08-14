@@ -3,3 +3,4 @@ vendor/
 tmp/
 cvwo.db
 .env
+main
